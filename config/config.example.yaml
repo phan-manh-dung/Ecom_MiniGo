@@ -1,0 +1,13 @@
+# Example config file
+server:
+  port: 8080
+database:
+  host: localhost
+  port: 5432
+  user: postgres
+  password: secret
+  dbname: ecom_db
+grpc:
+  user_service: localhost:50051
+  product_service: localhost:50052
+  order_service: localhost:50053

@@ -1,0 +1,138 @@
+syntax = "proto3";
+
+package user;
+
+option go_package = "./;user";
+
+import "google/protobuf/timestamp.proto";
+
+// Role message
+message Role {
+  uint32 id = 1; // field tag 1
+  string name = 2; // field tag 2
+  google.protobuf.Timestamp created_at = 3; // field tag 3
+  google.protobuf.Timestamp updated_at = 4; // field tag 4
+}
+
+// Account message
+message Account {
+  uint32 id = 1;
+  uint32 user_id = 2;
+  uint32 role_id = 3;
+  User user = 4;
+  Role role = 5;
+  google.protobuf.Timestamp created_at = 6;
+  google.protobuf.Timestamp updated_at = 7;
+}
+
+// User message
+message User {
+  uint32 id = 1;
+  string name = 2;
+  string sdt = 3;
+  Account account = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+// Create User
+message CreateUserRequest {
+  string name = 1;
+  string sdt = 2;
+  uint32 role_id = 3;
+}
+
+message CreateUserResponse {
+  User user = 1;
+  string message = 2;
+}
+
+// Get User
+message GetUserRequest {
+  uint32 id = 1;
+}
+
+message GetUserResponse {
+  User user = 1;
+  string message = 2;
+}
+
+// Get User by SDT
+message GetUserBySDTRequest {
+  string sdt = 1;
+}
+
+message GetUserBySDTResponse {
+  User user = 1;
+  string message = 2;
+}
+
+// Update User
+message UpdateUserRequest {
+  uint32 id = 1;
+  string name = 2;
+  string sdt = 3;
+}
+
+message UpdateUserResponse {
+  User user = 1;
+  string message = 2;
+}
+
+// Delete User
+message DeleteUserRequest {
+  uint32 id = 1;
+}
+
+message DeleteUserResponse {
+  string message = 1;
+}
+
+// List Users
+message ListUsersRequest {
+  int32 page = 1;
+  int32 limit = 2;
+}
+
+message ListUsersResponse {
+  repeated User users = 1;
+  int32 total = 2;
+  string message = 3;
+}
+
+// Get Role
+message GetRoleRequest {
+  uint32 id = 1;
+}
+
+message GetRoleResponse {
+  Role role = 1;
+  string message = 2;
+}
+
+// List Roles
+message ListRolesRequest {
+  int32 page = 1;
+  int32 limit = 2;
+}
+
+message ListRolesResponse {
+  repeated Role roles = 1;
+  int32 total = 2;
+  string message = 3;
+}
+
+// Service
+service UserService {
+  // User CRUD
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  rpc GetUserBySDT(GetUserBySDTRequest) returns (GetUserBySDTResponse);
+  rpc UpdateUser(UpdateUserRequest) returns (UpdateUserResponse);
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+  
+  // Role operations
+  rpc GetRole(GetRoleRequest) returns (GetRoleResponse);
+  rpc ListRoles(ListRolesRequest) returns (ListRolesResponse);
+} 
