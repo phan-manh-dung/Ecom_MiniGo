@@ -1,12 +1,11 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
-	"net/http"
-	"strconv"
 
+	"gin/api-gateway/handler"
+	"gin/api-gateway/router"
 	"gin/proto/generated/user"
 
 	"github.com/gin-gonic/gin"
@@ -28,48 +27,19 @@ func NewUserServiceClient() (*UserServiceClient, error) {
 	return &UserServiceClient{client: client}, nil
 }
 
-func (u *UserServiceClient) GetUser(c *gin.Context) {
-	// Get user ID from URL parameter
-	userIDStr := c.Param("id")
-	userID, err := strconv.ParseUint(userIDStr, 10, 32)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-		return
-	}
-
-	// Call gRPC service
-	req := &user.GetUserRequest{
-		Id: uint32(userID),
-	}
-
-	resp, err := u.client.GetUser(context.Background(), req)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Return JSON response
-	c.JSON(http.StatusOK, gin.H{
-		"user":    resp.User,
-		"message": resp.Message,
-	})
-}
-
 func main() {
-	// Create user service client
-	userClient, err := NewUserServiceClient()
+	// Create gRPC client
+	conn, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatalf("Failed to create user service client: %v", err)
+		log.Fatalf("failed to connect to user service: %v", err)
 	}
+	userGrpcClient := user.NewUserServiceClient(conn)
+	userHandler := handler.NewUserServiceClient(userGrpcClient)
 
-	// Setup Gin router
 	r := gin.Default()
 
-	// User routes
-	userRoutes := r.Group("/api/users")
-	{
-		userRoutes.GET("/:id", userClient.GetUser)
-	}
+	// Register user routes
+	router.RegisterUserRoutes(r, userHandler)
 
 	// Start HTTP server
 	fmt.Println("API Gateway starting on :8080")

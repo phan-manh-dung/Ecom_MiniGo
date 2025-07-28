@@ -8,6 +8,8 @@ import (
 	"gin/proto/generated/user"
 	"gin/user_service/db"
 	"gin/user_service/handler"
+	"gin/user_service/repository"
+	"gin/user_service/service"
 
 	"google.golang.org/grpc"
 )
@@ -16,11 +18,15 @@ func main() {
 	// Connect to database
 	db.ConnectDatabase()
 
+	// Initialize layers
+	userRepo := repository.NewUserRepository(db.DB)
+	userService := service.NewUserService(userRepo)
+	userHandler := handler.NewUserHandler(userService)
+
 	// Create gRPC server
 	grpcServer := grpc.NewServer()
 
 	// Register user service
-	userHandler := handler.NewUserHandler(db.DB)
 	user.RegisterUserServiceServer(grpcServer, userHandler)
 
 	// Listen on port 50051
