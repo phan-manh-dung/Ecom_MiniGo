@@ -107,3 +107,24 @@ func (u *ProductServiceClient) DeleteProduct(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"message": resp.Message})
 }
+
+func (u *ProductServiceClient) DecreaseInventory(c *gin.Context) {
+	var reqBody struct {
+		ProductId uint32 `json:"product_id" binding:"required"`
+		Quantity  uint32 `json:"quantity" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&reqBody); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+		return
+	}
+	req := &product.DecreaseInventoryRequest{
+		ProductId: reqBody.ProductId,
+		Quantity:  reqBody.Quantity,
+	}
+	resp, err := u.Client.DecreaseInventory(context.Background(), req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": resp.Message})
+}

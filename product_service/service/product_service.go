@@ -129,6 +129,19 @@ func (s *ProductService) DeleteProduct(ctx context.Context, id uint32) (*product
 	}, nil
 }
 
+func (s *ProductService) DecreaseInventory(ctx context.Context, req *product.DecreaseInventoryRequest) (*product.DecreaseInventoryResponse, error) {
+	if req.Quantity <= 0 {
+		return nil, fmt.Errorf("quantity must be greater than 0")
+	}
+	err := s.productRepo.DecreaseInventory(uint(req.ProductId), int(req.Quantity))
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrease inventory: %v", err)
+	}
+	return &product.DecreaseInventoryResponse{
+		Message: "Inventory decreased successfully",
+	}, nil
+}
+
 func convertToProtoProduct(p *model.Product) *product.Product {
 	protoProduct := &product.Product{
 		Id:          uint32(p.ID),

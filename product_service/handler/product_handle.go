@@ -52,3 +52,11 @@ func (h *ProductHandler) DeleteProduct(ctx context.Context, req *product.DeleteP
 	}
 	return response, nil
 }
+
+func (h *ProductHandler) DecreaseInventory(ctx context.Context, req *product.DecreaseInventoryRequest) (*product.DecreaseInventoryResponse, error) {
+	response, err := h.productService.DecreaseInventory(ctx, req)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to decrease inventory")
+	}
+	return response, nil
+}

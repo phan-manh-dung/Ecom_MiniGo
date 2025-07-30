@@ -13,5 +13,6 @@ func RegisterProductRoutes(r *gin.Engine, productHandler *handler.ProductService
 		productRoutes.POST("/", productHandler.CreateProduct)
 		productRoutes.PUT("/product/:id", productHandler.UpdateProduct)
 		productRoutes.DELETE("/product/:id", productHandler.DeleteProduct)
+		productRoutes.POST("/decrease-inventory", productHandler.DecreaseInventory)
 	}
 }

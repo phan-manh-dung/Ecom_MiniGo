@@ -6,6 +6,7 @@ import (
 
 	"gin/api-gateway/handler"
 	"gin/api-gateway/router"
+	"gin/proto/generated/order"
 	"gin/proto/generated/product"
 	"gin/proto/generated/user"
 
@@ -18,6 +19,7 @@ import (
 type ServiceManager struct {
 	UserClient    user.UserServiceClient
 	ProductClient product.ProductServiceClient
+	OrderClient   order.OrderServiceClient
 }
 
 // NewServiceManager tạo và kết nối tất cả services
@@ -34,9 +36,16 @@ func NewServiceManager() (*ServiceManager, error) {
 		return nil, fmt.Errorf("failed to connect to product service: %v", err)
 	}
 
+	// Kết nối Order Service (port 50053)
+	orderConn, err := grpc.Dial("localhost:50053", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to order service: %v", err)
+	}
+
 	return &ServiceManager{
 		UserClient:    user.NewUserServiceClient(userConn),
 		ProductClient: product.NewProductServiceClient(productConn),
+		OrderClient:   order.NewOrderServiceClient(orderConn),
 	}, nil
 }
 
@@ -50,6 +59,7 @@ func main() {
 	// Tạo handlers
 	userHandler := handler.NewUserServiceClient(serviceManager.UserClient)
 	productHandler := handler.NewProductServiceClient(serviceManager.ProductClient)
+	orderHandler := handler.NewOrderServiceClient(serviceManager.OrderClient)
 
 	// Khởi tạo Gin router
 	r := gin.Default()
@@ -57,6 +67,7 @@ func main() {
 	// Đăng ký routes
 	router.RegisterUserRoutes(r, userHandler)
 	router.RegisterProductRoutes(r, productHandler)
+	router.RegisterOrderRoutes(r, orderHandler)
 
 	// Khởi động HTTP server
 	fmt.Println("API Gateway starting on :8080")

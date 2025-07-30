@@ -34,3 +34,14 @@ func (r *ProductRepository) Update(product *model.Product) error {
 func (r *ProductRepository) Delete(id uint) error {
 	return r.db.Delete(&model.Product{}, id).Error
 }
+
+func (r *ProductRepository) DecreaseInventory(productId uint, quantity int) error {
+	var inventory model.Inventory
+	if err := r.db.Where("product_id = ?", productId).First(&inventory).Error; err != nil {
+		return err
+	}
+	if inventory.Quantity < quantity {
+		return gorm.ErrInvalidData // hoặc custom error "not enough inventory"
+	}
+	return r.db.Model(&inventory).Update("quantity", inventory.Quantity-quantity).Error
+}
