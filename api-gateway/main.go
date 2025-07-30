@@ -6,6 +6,7 @@ import (
 
 	"gin/api-gateway/handler"
 	"gin/api-gateway/router"
+	"gin/proto/generated/product"
 	"gin/proto/generated/user"
 
 	"github.com/gin-gonic/gin"
@@ -13,35 +14,51 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-type UserServiceClient struct {
-	client user.UserServiceClient
+// ServiceManager quản lý tất cả gRPC clients
+type ServiceManager struct {
+	UserClient    user.UserServiceClient
+	ProductClient product.ProductServiceClient
 }
 
-func NewUserServiceClient() (*UserServiceClient, error) {
-	conn, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+// NewServiceManager tạo và kết nối tất cả services
+func NewServiceManager() (*ServiceManager, error) {
+	// Kết nối User Service (port 50051)
+	userConn, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to user service: %v", err)
 	}
 
-	client := user.NewUserServiceClient(conn)
-	return &UserServiceClient{client: client}, nil
+	// Kết nối Product Service (port 50052)
+	productConn, err := grpc.Dial("localhost:50052", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to product service: %v", err)
+	}
+
+	return &ServiceManager{
+		UserClient:    user.NewUserServiceClient(userConn),
+		ProductClient: product.NewProductServiceClient(productConn),
+	}, nil
 }
 
 func main() {
-	// Create gRPC client
-	conn, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	// Khởi tạo service manager
+	serviceManager, err := NewServiceManager()
 	if err != nil {
-		log.Fatalf("failed to connect to user service: %v", err)
+		log.Fatalf("Failed to initialize services: %v", err)
 	}
-	userGrpcClient := user.NewUserServiceClient(conn)
-	userHandler := handler.NewUserServiceClient(userGrpcClient)
 
+	// Tạo handlers
+	userHandler := handler.NewUserServiceClient(serviceManager.UserClient)
+	productHandler := handler.NewProductServiceClient(serviceManager.ProductClient)
+
+	// Khởi tạo Gin router
 	r := gin.Default()
 
-	// Register user routes
+	// Đăng ký routes
 	router.RegisterUserRoutes(r, userHandler)
+	router.RegisterProductRoutes(r, productHandler)
 
-	// Start HTTP server
+	// Khởi động HTTP server
 	fmt.Println("API Gateway starting on :8080")
 	if err := r.Run(":8080"); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
