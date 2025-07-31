@@ -29,7 +29,7 @@ func InitRedis() {
 	log.Println("Connected to Redis Cloud successfully")
 }
 
-// PublishOrderCancelled publish event khi order bị hủy
+// [Tạo PublishOrderCancelled publish event] khi order bị hủy
 func PublishOrderCancelled(ctx context.Context, orderID uint32, userID uint32, userEmail string) error {
 	event := map[string]interface{}{
 		"order_id":   orderID,
