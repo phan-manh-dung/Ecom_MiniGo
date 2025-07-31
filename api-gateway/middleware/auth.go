@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	SecretKey = "your-secret-key-here" // Trong production nên dùng environment variable
+	SecretKey = "your-secret-key-here"
 )
 
 // Claims định nghĩa cấu trúc JWT claims
@@ -87,7 +87,7 @@ func shouldSkipAuth(path string) bool {
 	skipPaths := []string{
 		"/api/users/login",
 		"/api/users/register",
-		"/api/products", // Cho phép xem sản phẩm mà không cần login
+		"/api/products",
 		"/health",
 	}
 

@@ -7,10 +7,12 @@ import (
 	"gin/order_service/repository"
 	"gin/order_service/service"
 	"gin/proto/generated/order"
+	"gin/proto/generated/product"
 	"log"
 	"net"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -20,10 +22,11 @@ func main() {
 	orderRepo := repository.NewOrderRepository(db.DB)
 
 	// Tạo gRPC client cho Product Service
-	productClient, err := service.NewProductServiceClient("localhost:50052")
+	productConn, err := grpc.Dial("localhost:50052", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Failed to connect to product service: %v", err)
 	}
+	productClient := product.NewProductServiceClient(productConn)
 
 	orderService := service.NewOrderService(orderRepo, productClient)
 	orderHandler := handler.NewOrderHandler(orderService)
