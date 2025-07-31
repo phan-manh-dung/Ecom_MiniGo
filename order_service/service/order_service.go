@@ -97,7 +97,6 @@ func (s *OrderService) CreateOrder(ctx context.Context, req *order.CreateOrderRe
 	}
 
 	// 2. Gọi gRPC sang Product Service để giảm tồn kho từng sản phẩm
-	// Đây là nơi sử dụng gRPC client đã được khởi tạo ở main.go
 	for _, item := range req.Items {
 		_, err := s.productClient.DecreaseInventory(ctx, &product.DecreaseInventoryRequest{
 			ProductId: item.ProductId,

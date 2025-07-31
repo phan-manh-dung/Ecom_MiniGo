@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"gin/api-gateway/handler"
+	"gin/api-gateway/middleware"
 	"gin/api-gateway/router"
 	"gin/proto/generated/order"
 	"gin/proto/generated/product"
@@ -62,7 +63,13 @@ func main() {
 	orderHandler := handler.NewOrderServiceClient(serviceManager.OrderClient)
 
 	// Khởi tạo Gin router
-	r := gin.Default()
+	r := gin.New()
+
+	// Áp dụng middleware theo thứ tự
+	r.Use(middleware.CORSMiddleware())      // CORS middleware
+	r.Use(middleware.RequestIDMiddleware()) // Request ID middleware
+	r.Use(middleware.LoggingMiddleware())   // Logging middleware
+	r.Use(middleware.AuthMiddleware())      // Authentication middleware
 
 	// Đăng ký routes
 	router.RegisterUserRoutes(r, userHandler)
