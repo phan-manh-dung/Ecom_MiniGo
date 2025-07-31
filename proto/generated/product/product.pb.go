@@ -725,6 +725,103 @@ func (x *DecreaseInventoryResponse) GetMessage() string {
 	return ""
 }
 
+// Increase Inventory
+type IncreaseInventoryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ProductId     uint32                 `protobuf:"varint,1,opt,name=product_id,json=productId,proto3" json:"product_id,omitempty"`
+	Quantity      uint32                 `protobuf:"varint,2,opt,name=quantity,proto3" json:"quantity,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *IncreaseInventoryRequest) Reset() {
+	*x = IncreaseInventoryRequest{}
+	mi := &file_proto_product_product_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IncreaseInventoryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IncreaseInventoryRequest) ProtoMessage() {}
+
+func (x *IncreaseInventoryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_product_product_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IncreaseInventoryRequest.ProtoReflect.Descriptor instead.
+func (*IncreaseInventoryRequest) Descriptor() ([]byte, []int) {
+	return file_proto_product_product_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *IncreaseInventoryRequest) GetProductId() uint32 {
+	if x != nil {
+		return x.ProductId
+	}
+	return 0
+}
+
+func (x *IncreaseInventoryRequest) GetQuantity() uint32 {
+	if x != nil {
+		return x.Quantity
+	}
+	return 0
+}
+
+type IncreaseInventoryResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Message       string                 `protobuf:"bytes,1,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *IncreaseInventoryResponse) Reset() {
+	*x = IncreaseInventoryResponse{}
+	mi := &file_proto_product_product_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IncreaseInventoryResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IncreaseInventoryResponse) ProtoMessage() {}
+
+func (x *IncreaseInventoryResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_product_product_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IncreaseInventoryResponse.ProtoReflect.Descriptor instead.
+func (*IncreaseInventoryResponse) Descriptor() ([]byte, []int) {
+	return file_proto_product_product_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *IncreaseInventoryResponse) GetMessage() string {
+	if x != nil {
+		return x.Message
+	}
+	return ""
+}
+
 var File_proto_product_product_proto protoreflect.FileDescriptor
 
 const file_proto_product_product_proto_rawDesc = "" +
@@ -780,14 +877,21 @@ const file_proto_product_product_proto_rawDesc = "" +
 	"product_id\x18\x01 \x01(\rR\tproductId\x12\x1a\n" +
 	"\bquantity\x18\x02 \x01(\rR\bquantity\"5\n" +
 	"\x19DecreaseInventoryResponse\x12\x18\n" +
-	"\amessage\x18\x01 \x01(\tR\amessage2\xa3\x03\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage\"U\n" +
+	"\x18IncreaseInventoryRequest\x12\x1d\n" +
+	"\n" +
+	"product_id\x18\x01 \x01(\rR\tproductId\x12\x1a\n" +
+	"\bquantity\x18\x02 \x01(\rR\bquantity\"5\n" +
+	"\x19IncreaseInventoryResponse\x12\x18\n" +
+	"\amessage\x18\x01 \x01(\tR\amessage2\xff\x03\n" +
 	"\x0eProductService\x12N\n" +
 	"\rCreateProduct\x12\x1d.product.CreateProductRequest\x1a\x1e.product.CreateProductResponse\x12E\n" +
 	"\n" +
 	"GetProduct\x12\x1a.product.GetProductRequest\x1a\x1b.product.GetProductResponse\x12N\n" +
 	"\rUpdateProduct\x12\x1d.product.UpdateProductRequest\x1a\x1e.product.UpdateProductResponse\x12N\n" +
 	"\rDeleteProduct\x12\x1d.product.DeleteProductRequest\x1a\x1e.product.DeleteProductResponse\x12Z\n" +
-	"\x11DecreaseInventory\x12!.product.DecreaseInventoryRequest\x1a\".product.DecreaseInventoryResponseB\fZ\n" +
+	"\x11DecreaseInventory\x12!.product.DecreaseInventoryRequest\x1a\".product.DecreaseInventoryResponse\x12Z\n" +
+	"\x11IncreaseInventory\x12!.product.IncreaseInventoryRequest\x1a\".product.IncreaseInventoryResponseB\fZ\n" +
 	"./;productb\x06proto3"
 
 var (
@@ -802,7 +906,7 @@ func file_proto_product_product_proto_rawDescGZIP() []byte {
 	return file_proto_product_product_proto_rawDescData
 }
 
-var file_proto_product_product_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_proto_product_product_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_proto_product_product_proto_goTypes = []any{
 	(*Product)(nil),                   // 0: product.Product
 	(*Inventory)(nil),                 // 1: product.Inventory
@@ -816,14 +920,16 @@ var file_proto_product_product_proto_goTypes = []any{
 	(*DeleteProductResponse)(nil),     // 9: product.DeleteProductResponse
 	(*DecreaseInventoryRequest)(nil),  // 10: product.DecreaseInventoryRequest
 	(*DecreaseInventoryResponse)(nil), // 11: product.DecreaseInventoryResponse
-	(*timestamppb.Timestamp)(nil),     // 12: google.protobuf.Timestamp
+	(*IncreaseInventoryRequest)(nil),  // 12: product.IncreaseInventoryRequest
+	(*IncreaseInventoryResponse)(nil), // 13: product.IncreaseInventoryResponse
+	(*timestamppb.Timestamp)(nil),     // 14: google.protobuf.Timestamp
 }
 var file_proto_product_product_proto_depIdxs = []int32{
 	1,  // 0: product.Product.inventory:type_name -> product.Inventory
-	12, // 1: product.Product.created_at:type_name -> google.protobuf.Timestamp
-	12, // 2: product.Product.updated_at:type_name -> google.protobuf.Timestamp
-	12, // 3: product.Inventory.created_at:type_name -> google.protobuf.Timestamp
-	12, // 4: product.Inventory.updated_at:type_name -> google.protobuf.Timestamp
+	14, // 1: product.Product.created_at:type_name -> google.protobuf.Timestamp
+	14, // 2: product.Product.updated_at:type_name -> google.protobuf.Timestamp
+	14, // 3: product.Inventory.created_at:type_name -> google.protobuf.Timestamp
+	14, // 4: product.Inventory.updated_at:type_name -> google.protobuf.Timestamp
 	0,  // 5: product.CreateProductResponse.product:type_name -> product.Product
 	0,  // 6: product.GetProductResponse.product:type_name -> product.Product
 	0,  // 7: product.UpdateProductResponse.product:type_name -> product.Product
@@ -832,13 +938,15 @@ var file_proto_product_product_proto_depIdxs = []int32{
 	6,  // 10: product.ProductService.UpdateProduct:input_type -> product.UpdateProductRequest
 	8,  // 11: product.ProductService.DeleteProduct:input_type -> product.DeleteProductRequest
 	10, // 12: product.ProductService.DecreaseInventory:input_type -> product.DecreaseInventoryRequest
-	3,  // 13: product.ProductService.CreateProduct:output_type -> product.CreateProductResponse
-	5,  // 14: product.ProductService.GetProduct:output_type -> product.GetProductResponse
-	7,  // 15: product.ProductService.UpdateProduct:output_type -> product.UpdateProductResponse
-	9,  // 16: product.ProductService.DeleteProduct:output_type -> product.DeleteProductResponse
-	11, // 17: product.ProductService.DecreaseInventory:output_type -> product.DecreaseInventoryResponse
-	13, // [13:18] is the sub-list for method output_type
-	8,  // [8:13] is the sub-list for method input_type
+	12, // 13: product.ProductService.IncreaseInventory:input_type -> product.IncreaseInventoryRequest
+	3,  // 14: product.ProductService.CreateProduct:output_type -> product.CreateProductResponse
+	5,  // 15: product.ProductService.GetProduct:output_type -> product.GetProductResponse
+	7,  // 16: product.ProductService.UpdateProduct:output_type -> product.UpdateProductResponse
+	9,  // 17: product.ProductService.DeleteProduct:output_type -> product.DeleteProductResponse
+	11, // 18: product.ProductService.DecreaseInventory:output_type -> product.DecreaseInventoryResponse
+	13, // 19: product.ProductService.IncreaseInventory:output_type -> product.IncreaseInventoryResponse
+	14, // [14:20] is the sub-list for method output_type
+	8,  // [8:14] is the sub-list for method input_type
 	8,  // [8:8] is the sub-list for extension type_name
 	8,  // [8:8] is the sub-list for extension extendee
 	0,  // [0:8] is the sub-list for field type_name
@@ -855,7 +963,7 @@ func file_proto_product_product_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_product_product_proto_rawDesc), len(file_proto_product_product_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   12,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

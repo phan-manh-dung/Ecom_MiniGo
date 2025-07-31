@@ -123,3 +123,22 @@ func (o *OrderServiceClient) GetOrderDetails(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"order_details": resp.OrderDetails, "message": resp.Message})
 }
+
+func (o *OrderServiceClient) CancelOrder(c *gin.Context) {
+	orderIdParam := c.Param("id")
+	orderId, err := strconv.ParseUint(orderIdParam, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid orderId"})
+		return
+	}
+
+	req := &order.CancelOrderRequest{
+		OrderId: uint32(orderId),
+	}
+	resp, err := o.Client.CancelOrder(context.Background(), req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"order": resp.Order, "message": resp.Message})
+}

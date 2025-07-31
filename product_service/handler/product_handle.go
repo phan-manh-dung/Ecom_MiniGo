@@ -60,3 +60,11 @@ func (h *ProductHandler) DecreaseInventory(ctx context.Context, req *product.Dec
 	}
 	return response, nil
 }
+
+func (h *ProductHandler) IncreaseInventory(ctx context.Context, req *product.IncreaseInventoryRequest) (*product.IncreaseInventoryResponse, error) {
+	response, err := h.productService.IncreaseInventory(ctx, req)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "Failed to increase inventory")
+	}
+	return response, nil
+}

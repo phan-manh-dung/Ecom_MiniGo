@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gin/order_service/db"
 	"gin/order_service/handler"
+	"gin/order_service/redis"
 	"gin/order_service/repository"
 	"gin/order_service/service"
 	"gin/proto/generated/order"
@@ -17,6 +18,7 @@ import (
 
 func main() {
 	db.ConnectDatabase()
+	redis.InitRedis()
 
 	// init layer
 	orderRepo := repository.NewOrderRepository(db.DB)

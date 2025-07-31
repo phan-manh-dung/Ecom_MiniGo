@@ -24,6 +24,7 @@ const (
 	ProductService_UpdateProduct_FullMethodName     = "/product.ProductService/UpdateProduct"
 	ProductService_DeleteProduct_FullMethodName     = "/product.ProductService/DeleteProduct"
 	ProductService_DecreaseInventory_FullMethodName = "/product.ProductService/DecreaseInventory"
+	ProductService_IncreaseInventory_FullMethodName = "/product.ProductService/IncreaseInventory"
 )
 
 // ProductServiceClient is the client API for ProductService service.
@@ -38,6 +39,7 @@ type ProductServiceClient interface {
 	UpdateProduct(ctx context.Context, in *UpdateProductRequest, opts ...grpc.CallOption) (*UpdateProductResponse, error)
 	DeleteProduct(ctx context.Context, in *DeleteProductRequest, opts ...grpc.CallOption) (*DeleteProductResponse, error)
 	DecreaseInventory(ctx context.Context, in *DecreaseInventoryRequest, opts ...grpc.CallOption) (*DecreaseInventoryResponse, error)
+	IncreaseInventory(ctx context.Context, in *IncreaseInventoryRequest, opts ...grpc.CallOption) (*IncreaseInventoryResponse, error)
 }
 
 type productServiceClient struct {
@@ -98,6 +100,16 @@ func (c *productServiceClient) DecreaseInventory(ctx context.Context, in *Decrea
 	return out, nil
 }
 
+func (c *productServiceClient) IncreaseInventory(ctx context.Context, in *IncreaseInventoryRequest, opts ...grpc.CallOption) (*IncreaseInventoryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(IncreaseInventoryResponse)
+	err := c.cc.Invoke(ctx, ProductService_IncreaseInventory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ProductServiceServer is the server API for ProductService service.
 // All implementations must embed UnimplementedProductServiceServer
 // for forward compatibility.
@@ -110,6 +122,7 @@ type ProductServiceServer interface {
 	UpdateProduct(context.Context, *UpdateProductRequest) (*UpdateProductResponse, error)
 	DeleteProduct(context.Context, *DeleteProductRequest) (*DeleteProductResponse, error)
 	DecreaseInventory(context.Context, *DecreaseInventoryRequest) (*DecreaseInventoryResponse, error)
+	IncreaseInventory(context.Context, *IncreaseInventoryRequest) (*IncreaseInventoryResponse, error)
 	mustEmbedUnimplementedProductServiceServer()
 }
 
@@ -134,6 +147,9 @@ func (UnimplementedProductServiceServer) DeleteProduct(context.Context, *DeleteP
 }
 func (UnimplementedProductServiceServer) DecreaseInventory(context.Context, *DecreaseInventoryRequest) (*DecreaseInventoryResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DecreaseInventory not implemented")
+}
+func (UnimplementedProductServiceServer) IncreaseInventory(context.Context, *IncreaseInventoryRequest) (*IncreaseInventoryResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IncreaseInventory not implemented")
 }
 func (UnimplementedProductServiceServer) mustEmbedUnimplementedProductServiceServer() {}
 func (UnimplementedProductServiceServer) testEmbeddedByValue()                        {}
@@ -246,6 +262,24 @@ func _ProductService_DecreaseInventory_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ProductService_IncreaseInventory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IncreaseInventoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProductServiceServer).IncreaseInventory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProductService_IncreaseInventory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProductServiceServer).IncreaseInventory(ctx, req.(*IncreaseInventoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ProductService_ServiceDesc is the grpc.ServiceDesc for ProductService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -272,6 +306,10 @@ var ProductService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DecreaseInventory",
 			Handler:    _ProductService_DecreaseInventory_Handler,
+		},
+		{
+			MethodName: "IncreaseInventory",
+			Handler:    _ProductService_IncreaseInventory_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

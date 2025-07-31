@@ -13,6 +13,7 @@ func RegisterOrderRoutes(r *gin.Engine, orderHandler *handler.OrderServiceClient
 		orderRoutes.GET("/user/:user_id", orderHandler.GetOrdersByUser)
 		orderRoutes.POST("/", orderHandler.CreateOrder)
 		orderRoutes.PUT("/:id/status", orderHandler.UpdateOrderStatus)
+		orderRoutes.PUT("/:id/cancel", orderHandler.CancelOrder)
 		orderRoutes.GET("/:id/details", orderHandler.GetOrderDetails)
 	}
 }

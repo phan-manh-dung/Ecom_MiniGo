@@ -81,6 +81,15 @@ message DecreaseInventoryResponse {
   string message = 1;
 }
 
+// Increase Inventory
+message IncreaseInventoryRequest {
+  uint32 product_id = 1;
+  uint32 quantity = 2;
+}
+message IncreaseInventoryResponse {
+  string message = 1;
+}
+
 // Service
 service ProductService {
   // Product CRUD
@@ -89,4 +98,5 @@ service ProductService {
   rpc UpdateProduct(UpdateProductRequest) returns (UpdateProductResponse);
   rpc DeleteProduct(DeleteProductRequest) returns (DeleteProductResponse);
   rpc DecreaseInventory(DecreaseInventoryRequest) returns (DecreaseInventoryResponse);
+  rpc IncreaseInventory(IncreaseInventoryRequest) returns (IncreaseInventoryResponse);
 } 

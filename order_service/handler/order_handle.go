@@ -34,3 +34,7 @@ func (h *OrderHandler) GetOrderDetails(ctx context.Context, req *order.GetOrderD
 func (h *OrderHandler) CreateOrder(ctx context.Context, req *order.CreateOrderRequest) (*order.CreateOrderResponse, error) {
 	return h.orderService.CreateOrder(ctx, req)
 }
+
+func (h *OrderHandler) CancelOrder(ctx context.Context, req *order.CancelOrderRequest) (*order.CancelOrderResponse, error) {
+	return h.orderService.CancelOrder(ctx, req)
+}

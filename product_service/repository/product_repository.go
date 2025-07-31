@@ -45,3 +45,11 @@ func (r *ProductRepository) DecreaseInventory(productId uint, quantity int) erro
 	}
 	return r.db.Model(&inventory).Update("quantity", inventory.Quantity-quantity).Error
 }
+
+func (r *ProductRepository) IncreaseInventory(productId uint, quantity int) error {
+	var inventory model.Inventory
+	if err := r.db.Where("product_id = ?", productId).First(&inventory).Error; err != nil {
+		return err
+	}
+	return r.db.Model(&inventory).Update("quantity", inventory.Quantity+quantity).Error
+}

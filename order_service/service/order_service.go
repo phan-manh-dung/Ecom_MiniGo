@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"gin/order_service/model"
+	"gin/order_service/redis"
 	"gin/order_service/repository"
 	"gin/proto/generated/order"
 	"gin/proto/generated/product"
@@ -56,6 +57,54 @@ func (s *OrderService) UpdateOrderStatus(ctx context.Context, req *order.UpdateO
 	return &order.UpdateOrderStatusResponse{
 		Order:   convertToProtoOrder(ord),
 		Message: "Status updated",
+	}, nil
+}
+
+// CancelOrder hủy đơn hàng và publish event
+func (s *OrderService) CancelOrder(ctx context.Context, req *order.CancelOrderRequest) (*order.CancelOrderResponse, error) {
+	// 1. Lấy thông tin order
+	ord, err := s.orderRepo.GetOrderByID(uint(req.OrderId))
+	if err != nil {
+		return nil, fmt.Errorf("order not found")
+	}
+
+	// 2. Kiểm tra trạng thái order
+	if ord.Status == "CANCELLED" {
+		return nil, fmt.Errorf("order already cancelled")
+	}
+
+	// 3. Update status thành CANCELLED
+	err = s.orderRepo.UpdateOrderStatus(uint(req.OrderId), "CANCELLED")
+	if err != nil {
+		return nil, fmt.Errorf("failed to cancel order")
+	}
+
+	// 4. Hoàn trả inventory (tăng stock)
+	for _, detail := range ord.OrderDetails {
+		_, err := s.productClient.IncreaseInventory(ctx, &product.IncreaseInventoryRequest{
+			ProductId: uint32(detail.ProductID),
+			Quantity:  uint32(detail.Quantity),
+		})
+		if err != nil {
+			// Log error nhưng không fail order cancellation
+			fmt.Printf("Failed to increase inventory for product %d: %v", detail.ProductID, err)
+		}
+	}
+
+	// 5. Publish Redis event
+	// Trong thực tế, cần lấy user email từ User Service
+	userEmail := "dungcongnghiep4@gmail.com" // Placeholder
+	err = redis.PublishOrderCancelled(ctx, uint32(req.OrderId), uint32(ord.UserID), userEmail)
+	if err != nil {
+		// Log error nhưng không fail order cancellation
+		fmt.Printf("Failed to publish order cancelled event: %v", err)
+	}
+
+	// 6. Lấy order đã update
+	updatedOrder, _ := s.orderRepo.GetOrderByID(uint(req.OrderId))
+	return &order.CancelOrderResponse{
+		Order:   convertToProtoOrder(updatedOrder),
+		Message: "Order cancelled successfully",
 	}, nil
 }
 
