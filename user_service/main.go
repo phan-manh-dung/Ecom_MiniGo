@@ -3,9 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
-	"net"
-
 	"gin/proto/generated/user"
 	"gin/user_service/db"
 	"gin/user_service/email"
@@ -13,20 +10,57 @@ import (
 	userredis "gin/user_service/redis"
 	"gin/user_service/repository"
 	"gin/user_service/service"
+	"log"
+	"net"
+	"os"
 
+	"github.com/hashicorp/consul/api"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
+
+func registerServiceWithConsul(serviceName string, servicePort int) error {
+	config := api.DefaultConfig()
+	config.Address = "localhost:8500"
+
+	client, err := api.NewClient(config)
+	if err != nil {
+		return err
+	}
+
+	host := "localhost"
+
+	registration := &api.AgentServiceRegistration{
+		ID:      fmt.Sprintf("%s-%d", serviceName, servicePort),
+		Name:    serviceName,
+		Address: host,
+		Port:    servicePort,
+		Check: &api.AgentServiceCheck{
+			GRPC:                           fmt.Sprintf("%s:%d", host, servicePort),
+			Interval:                       "10s",
+			Timeout:                        "1s",
+			DeregisterCriticalServiceAfter: "1m",
+		},
+	}
+
+	return client.Agent().ServiceRegister(registration)
+}
 
 func main() {
 	// Connect to database
 	db.ConnectDatabase()
 
+	addr := os.Getenv("Addr")
+	username := os.Getenv("Username")
+	password := os.Getenv("Password")
+
 	// Initialize Redis client
 	redisClient := redis.NewClient(&redis.Options{
-		Addr:     "redis-19112.c52.us-east-1-4.ec2.redns.redis-cloud.com:19112",
-		Username: "default",
-		Password: "pA4GVyJVQTLUeCXNBsKnauUAtKQND7Jl",
+		Addr:     addr,
+		Username: username,
+		Password: password,
 		DB:       0,
 	})
 
@@ -57,6 +91,11 @@ func main() {
 	// Create gRPC server
 	grpcServer := grpc.NewServer()
 
+	// Đăng ký health check service
+	healthServer := health.NewServer()
+	healthpb.RegisterHealthServer(grpcServer, healthServer)
+	healthServer.SetServingStatus("", healthpb.HealthCheckResponse_SERVING)
+
 	// Register user service
 	user.RegisterUserServiceServer(grpcServer, userHandler)
 
@@ -64,6 +103,12 @@ func main() {
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
+	}
+
+	// Đăng ký Consul trước khi serve
+	err = registerServiceWithConsul("user-service", 50051)
+	if err != nil {
+		log.Fatalf("Failed to register service with Consul: %v", err)
 	}
 
 	fmt.Println("User service gRPC server starting on :50051")

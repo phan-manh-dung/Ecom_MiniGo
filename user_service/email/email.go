@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/smtp"
+	"os"
 )
 
 type EmailService struct {
@@ -14,11 +15,15 @@ type EmailService struct {
 }
 
 func NewEmailService() *EmailService {
+	form := os.Getenv("form")
+	password := os.Getenv("password")
+	smtpHost := os.Getenv("smtpHost")
+	smtpPort := os.Getenv("smtpPort")
 	return &EmailService{
-		from:     "dungcongnghiep4@gmail.com", // Email của bạn
-		password: "vclrrtxkmkgcccit",
-		smtpHost: "smtp.gmail.com",
-		smtpPort: "587",
+		from:     form,
+		password: password,
+		smtpHost: smtpHost,
+		smtpPort: smtpPort,
 	}
 }
 

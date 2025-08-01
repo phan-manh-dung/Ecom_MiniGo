@@ -12,6 +12,7 @@ import (
 	"gin/proto/generated/user"
 
 	"github.com/gin-gonic/gin"
+	"github.com/hashicorp/consul/api"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -23,22 +24,49 @@ type ServiceManager struct {
 	OrderClient   order.OrderServiceClient
 }
 
+func getServiceAddressFromConsul(serviceName string) (string, error) {
+	config := api.DefaultConfig()
+	config.Address = "localhost:8500"
+
+	client, err := api.NewClient(config)
+	if err != nil {
+		return "", err
+	}
+
+	services, _, err := client.Health().Service(serviceName, "", true, nil)
+	if err != nil || len(services) == 0 {
+		return "", fmt.Errorf("service not found")
+	}
+
+	svc := services[0].Service
+	return fmt.Sprintf("%s:%d", svc.Address, svc.Port), nil
+}
+
 // NewServiceManager tạo và kết nối tất cả services
 func NewServiceManager() (*ServiceManager, error) {
-	// Kết nối User Service (port 50051)
-	userConn, err := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	userAddr, err := getServiceAddressFromConsul("user-service")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user service address: %v", err)
+	}
+	userConn, err := grpc.Dial(userAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to user service: %v", err)
 	}
 
-	// Kết nối Product Service (port 50052)
-	productConn, err := grpc.Dial("localhost:50052", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	productAddr, err := getServiceAddressFromConsul("product-service")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get product service address: %v", err)
+	}
+	productConn, err := grpc.Dial(productAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to product service: %v", err)
 	}
 
-	// Kết nối Order Service (port 50053)
-	orderConn, err := grpc.Dial("localhost:50053", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	orderAddr, err := getServiceAddressFromConsul("order-service")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get order service address: %v", err)
+	}
+	orderConn, err := grpc.Dial(orderAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to order service: %v", err)
 	}
