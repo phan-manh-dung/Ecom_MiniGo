@@ -9,5 +9,5 @@ database:
   dbname: ecom_db
 grpc:
   user_service: localhost:50051
-  product_service: localhost:50052
-  order_service: localhost:50053
+  product_service: localhost:60051
+  order_service: localhost:70051

@@ -9,6 +9,8 @@ import (
 	"gin/proto/generated/product"
 	"log"
 	"net"
+	"os"
+	"strconv"
 
 	"github.com/hashicorp/consul/api"
 	"google.golang.org/grpc"
@@ -46,6 +48,17 @@ func registerServiceWithConsul(serviceName string, servicePort int) error {
 func main() {
 	db.ConnectDatabase()
 
+	// Get port from environment variable, default to 50051
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "60051"
+	}
+
+	servicePort := 60051 // default
+	if p, err := strconv.Atoi(port); err == nil {
+		servicePort = p
+	}
+
 	// init layer
 	productRepo := repository.NewUserRepository(db.DB)
 	productService := service.NewProductService(productRepo)
@@ -60,18 +73,18 @@ func main() {
 	// register product service
 	product.RegisterProductServiceServer(grpcServer, productHandler)
 
-	// Listen on port 50052
-	lis, err := net.Listen("tcp", ":50052")
+	// Listen on port 60051
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", servicePort))
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
 
-	err = registerServiceWithConsul("product-service", 50052)
+	err = registerServiceWithConsul("product-service", servicePort)
 	if err != nil {
-		panic(err)
+		log.Fatalf("Failed to register service with Consul: %v", err)
 	}
 
-	fmt.Println("User service gRPC server starting on :50052")
+	fmt.Println("Product service gRPC server starting on :60051")
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve: %v", err)
 	}

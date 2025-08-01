@@ -13,8 +13,10 @@ import (
 	"log"
 	"net"
 	"os"
+	"strconv"
 
 	"github.com/hashicorp/consul/api"
+	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
@@ -49,17 +51,32 @@ func registerServiceWithConsul(serviceName string, servicePort int) error {
 }
 
 func main() {
+	// Load .env file from parent directory
+	if err := godotenv.Load("../.env"); err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	// Connect to database
 	db.ConnectDatabase()
 
+	// Load Redis ENV
 	addr := os.Getenv("Addr")
-	username := os.Getenv("Username")
 	password := os.Getenv("Password")
+
+	// Get port from environment variable, default to 50051
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "50051"
+	}
+
+	servicePort := 50051 // default
+	if p, err := strconv.Atoi(port); err == nil {
+		servicePort = p
+	}
 
 	// Initialize Redis client
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     addr,
-		Username: username,
 		Password: password,
 		DB:       0,
 	})
@@ -99,19 +116,19 @@ func main() {
 	// Register user service
 	user.RegisterUserServiceServer(grpcServer, userHandler)
 
-	// Listen on port 50051
-	lis, err := net.Listen("tcp", ":50051")
+	// Listen on port
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", servicePort))
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
 	}
 
 	// Đăng ký Consul trước khi serve
-	err = registerServiceWithConsul("user-service", 50051)
+	err = registerServiceWithConsul("user-service", servicePort)
 	if err != nil {
 		log.Fatalf("Failed to register service with Consul: %v", err)
 	}
 
-	fmt.Println("User service gRPC server starting on :50051")
+	fmt.Printf("User service gRPC server starting on :%d\n", servicePort)
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve: %v", err)
 	}
