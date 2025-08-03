@@ -1,5 +1,3 @@
--- Thêm vào init-db.sql sau phần tạo bảng users
-ALTER TABLE users ADD CONSTRAINT uni_users_sdt UNIQUE (sdt);
 -- Tạo database cho user service
 CREATE DATABASE user_service;
 
@@ -124,7 +122,7 @@ ON CONFLICT (id) DO NOTHING;
 CREATE TABLE IF NOT EXISTS orders (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL,
-    total_price DECIMAL(10,2) NOT NULL,
+    total_price DECIMAL(15,2) NOT NULL,
     status VARCHAR(50) NOT NULL DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -137,7 +135,7 @@ CREATE TABLE IF NOT EXISTS order_details (
     order_id INTEGER REFERENCES orders(id),
     product_id INTEGER NOT NULL,
     quantity INTEGER NOT NULL,
-    unit_price DECIMAL(10,2) NOT NULL,
+    unit_price DECIMAL(15,2) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP
