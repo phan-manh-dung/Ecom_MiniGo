@@ -4,9 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
-	"os"
 
-	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -14,16 +12,11 @@ var RedisClient *redis.Client
 
 // InitRedis khởi tạo Redis client
 func InitRedis() {
-	// Load .env file from parent directory
-	if err := godotenv.Load("../.env"); err != nil {
-		log.Fatal("Error loading .env file")
-	}
-	// Load Redis ENV
-	addr := os.Getenv("Addr")
-	password := os.Getenv("Password")
+
 	RedisClient = redis.NewClient(&redis.Options{
-		Addr:     addr,
-		Password: password,
+		Addr:     "redis-19112.c52.us-east-1-4.ec2.redns.redis-cloud.com:19112",
+		Username: "default",
+		Password: "pA4GVyJVQTLUeCXNBsKnauUAtKQND7Jl",
 		DB:       0,
 	})
 

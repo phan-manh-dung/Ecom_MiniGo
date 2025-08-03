@@ -159,8 +159,19 @@ func (u *UserServiceClient) LoginUser(c *gin.Context) {
 		return
 	}
 
+	// Kiểm tra user có tồn tại không
+	if resp.User == nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+		return
+	}
+
 	// Tạo JWT token - lấy role từ database
-	roleName := resp.User.Account.Role.Name
+	var roleName string
+	if resp.User.Account != nil && resp.User.Account.Role != nil {
+		roleName = resp.User.Account.Role.Name
+	} else {
+		roleName = "USER" // default role
+	}
 	token, err := utils.GenerateToken(strconv.FormatUint(uint64(resp.User.Id), 10), resp.User.Name, roleName)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})

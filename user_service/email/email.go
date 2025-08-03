@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/smtp"
-	"os"
-
-	"github.com/joho/godotenv"
 )
 
 type EmailService struct {
@@ -17,21 +14,12 @@ type EmailService struct {
 }
 
 func NewEmailService() *EmailService {
-	// Load .env file from parent directory
-	if err := godotenv.Load("../.env"); err != nil {
-		log.Fatal("Error loading .env file")
-	}
-
-	form := os.Getenv("form")
-	passwordEmail := os.Getenv("passwordEmail")
-	smtpHost := os.Getenv("smtpHost")
-	smtpPort := os.Getenv("smtpPort")
 
 	return &EmailService{
-		from:     form,
-		password: passwordEmail,
-		smtpHost: smtpHost,
-		smtpPort: smtpPort,
+		from:     "dungcongnghiep4@gmail.com",
+		password: "vclrrtxkmkgcccit",
+		smtpHost: "smtp.gmail.com",
+		smtpPort: "587",
 	}
 }
 

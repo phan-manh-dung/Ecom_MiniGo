@@ -20,14 +20,22 @@ import (
 
 func registerServiceWithConsul(serviceName string, servicePort int) error {
 	config := api.DefaultConfig()
-	config.Address = "localhost:8500"
+	consulAddr := os.Getenv("CONSUL_ADDR")
+	log.Printf("CONSUL_ADDR environment variable: '%s'", consulAddr)
+	if consulAddr == "" {
+		consulAddr = "localhost:8500"
+		log.Printf("CONSUL_ADDR is empty, using default: %s", consulAddr)
+	}
+	config.Address = consulAddr
+	log.Printf("Connecting to Consul at: %s", config.Address)
 
 	client, err := api.NewClient(config)
 	if err != nil {
 		return err
 	}
 
-	host := "localhost"
+	// Sử dụng container name thay vì localhost
+	host := "product-service"
 
 	registration := &api.AgentServiceRegistration{
 		ID:      fmt.Sprintf("%s-%d", serviceName, servicePort),
@@ -79,10 +87,12 @@ func main() {
 		log.Fatalf("Failed to listen: %v", err)
 	}
 
+	log.Printf("Attempting to register product-service with Consul on port %d", servicePort)
 	err = registerServiceWithConsul("product-service", servicePort)
 	if err != nil {
 		log.Fatalf("Failed to register service with Consul: %v", err)
 	}
+	log.Printf("Successfully registered product-service with Consul")
 
 	fmt.Println("Product service gRPC server starting on :60051")
 	if err := grpcServer.Serve(lis); err != nil {

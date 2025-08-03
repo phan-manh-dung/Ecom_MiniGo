@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
+	"time"
 
 	"gin/api-gateway/handler"
 	"gin/api-gateway/middleware"
@@ -26,7 +28,14 @@ type ServiceManager struct {
 
 func getServiceAddressFromConsul(serviceName string) (string, error) {
 	config := api.DefaultConfig()
-	config.Address = "localhost:8500"
+	consulAddr := os.Getenv("CONSUL_ADDR")
+	log.Printf("CONSUL_ADDR environment variable: '%s'", consulAddr)
+	if consulAddr == "" {
+		consulAddr = "localhost:8500"
+		log.Printf("CONSUL_ADDR is empty, using default: %s", consulAddr)
+	}
+	config.Address = consulAddr
+	log.Printf("Connecting to Consul at: %s", config.Address)
 
 	client, err := api.NewClient(config)
 	if err != nil {
@@ -42,35 +51,60 @@ func getServiceAddressFromConsul(serviceName string) (string, error) {
 	return fmt.Sprintf("%s:%d", svc.Address, svc.Port), nil
 }
 
+// waitForService waits for a service to be available in Consul
+func waitForService(serviceName string, maxRetries int) (string, error) {
+	for i := 0; i < maxRetries; i++ {
+		log.Printf("Attempting to find service %s (attempt %d/%d)", serviceName, i+1, maxRetries)
+		addr, err := getServiceAddressFromConsul(serviceName)
+		if err == nil {
+			log.Printf("Service %s found at %s", serviceName, addr)
+			return addr, nil
+		}
+		log.Printf("Service %s not found yet: %v", serviceName, err)
+		log.Printf("Waiting for service %s... (attempt %d/%d)", serviceName, i+1, maxRetries)
+		time.Sleep(5 * time.Second)
+	}
+	return "", fmt.Errorf("service %s not available after %d retries", serviceName, maxRetries)
+}
+
 // NewServiceManager tạo và kết nối tất cả services
 func NewServiceManager() (*ServiceManager, error) {
-	userAddr, err := getServiceAddressFromConsul("user-service")
+	log.Printf("Initializing ServiceManager...")
+
+	userAddr, err := waitForService("user-service", 12) // Wait up to 1 minute
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user service address: %v", err)
 	}
+	log.Printf("Connecting to user service at: %s", userAddr)
 	userConn, err := grpc.Dial(userAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to user service: %v", err)
 	}
+	log.Printf("Successfully connected to user service")
 
-	productAddr, err := getServiceAddressFromConsul("product-service")
+	productAddr, err := waitForService("product-service", 12)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get product service address: %v", err)
 	}
+	log.Printf("Connecting to product service at: %s", productAddr)
 	productConn, err := grpc.Dial(productAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to product service: %v", err)
 	}
+	log.Printf("Successfully connected to product service")
 
-	orderAddr, err := getServiceAddressFromConsul("order-service")
+	orderAddr, err := waitForService("order-service", 12)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get order service address: %v", err)
 	}
+	log.Printf("Connecting to order service at: %s", orderAddr)
 	orderConn, err := grpc.Dial(orderAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to order service: %v", err)
 	}
+	log.Printf("Successfully connected to order service")
 
+	log.Printf("All services connected successfully")
 	return &ServiceManager{
 		UserClient:    user.NewUserServiceClient(userConn),
 		ProductClient: product.NewProductServiceClient(productConn),
@@ -79,6 +113,8 @@ func NewServiceManager() (*ServiceManager, error) {
 }
 
 func main() {
+	log.Printf("Starting API Gateway...")
+
 	// Khởi tạo service manager
 	serviceManager, err := NewServiceManager()
 	if err != nil {

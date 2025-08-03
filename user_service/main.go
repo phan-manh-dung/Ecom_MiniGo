@@ -16,7 +16,6 @@ import (
 	"strconv"
 
 	"github.com/hashicorp/consul/api"
-	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
@@ -25,14 +24,22 @@ import (
 
 func registerServiceWithConsul(serviceName string, servicePort int) error {
 	config := api.DefaultConfig()
-	config.Address = "localhost:8500"
+	consulAddr := os.Getenv("CONSUL_ADDR")
+	log.Printf("CONSUL_ADDR environment variable: '%s'", consulAddr)
+	if consulAddr == "" {
+		consulAddr = "localhost:8500"
+		log.Printf("CONSUL_ADDR is empty, using default: %s", consulAddr)
+	}
+	config.Address = consulAddr
+	log.Printf("Connecting to Consul at: %s", config.Address)
 
 	client, err := api.NewClient(config)
 	if err != nil {
 		return err
 	}
 
-	host := "localhost"
+	// Sử dụng container name thay vì localhost
+	host := "user-service"
 
 	registration := &api.AgentServiceRegistration{
 		ID:      fmt.Sprintf("%s-%d", serviceName, servicePort),
@@ -51,17 +58,9 @@ func registerServiceWithConsul(serviceName string, servicePort int) error {
 }
 
 func main() {
-	// Load .env file from parent directory
-	if err := godotenv.Load("../.env"); err != nil {
-		log.Fatal("Error loading .env file")
-	}
 
 	// Connect to database
 	db.ConnectDatabase()
-
-	// Load Redis ENV
-	addr := os.Getenv("Addr")
-	password := os.Getenv("Password")
 
 	// Get port from environment variable, default to 50051
 	port := os.Getenv("PORT")
@@ -76,8 +75,9 @@ func main() {
 
 	// Initialize Redis client
 	redisClient := redis.NewClient(&redis.Options{
-		Addr:     addr,
-		Password: password,
+		Addr:     "redis-19112.c52.us-east-1-4.ec2.redns.redis-cloud.com:19112",
+		Username: "default",
+		Password: "pA4GVyJVQTLUeCXNBsKnauUAtKQND7Jl",
 		DB:       0,
 	})
 
@@ -123,10 +123,12 @@ func main() {
 	}
 
 	// Đăng ký Consul trước khi serve
+	log.Printf("Attempting to register user-service with Consul on port %d", servicePort)
 	err = registerServiceWithConsul("user-service", servicePort)
 	if err != nil {
 		log.Fatalf("Failed to register service with Consul: %v", err)
 	}
+	log.Printf("Successfully registered user-service with Consul")
 
 	fmt.Printf("User service gRPC server starting on :%d\n", servicePort)
 	if err := grpcServer.Serve(lis); err != nil {

@@ -23,14 +23,22 @@ import (
 
 func registerServiceWithConsul(serviceName string, servicePort int) error {
 	config := api.DefaultConfig()
-	config.Address = "localhost:8500"
+	consulAddr := os.Getenv("CONSUL_ADDR")
+	log.Printf("CONSUL_ADDR environment variable: '%s'", consulAddr)
+	if consulAddr == "" {
+		consulAddr = "localhost:8500"
+		log.Printf("CONSUL_ADDR is empty, using default: %s", consulAddr)
+	}
+	config.Address = consulAddr
+	log.Printf("Connecting to Consul at: %s", config.Address)
 
 	client, err := api.NewClient(config)
 	if err != nil {
 		return err
 	}
 
-	host := "localhost"
+	// Sử dụng container name thay vì localhost
+	host := "order-service"
 
 	registration := &api.AgentServiceRegistration{
 		ID:      fmt.Sprintf("%s-%d", serviceName, servicePort),
@@ -66,7 +74,11 @@ func main() {
 	orderRepo := repository.NewOrderRepository(db.DB)
 
 	// Tạo gRPC client cho Product Service
-	productConn, err := grpc.Dial("localhost:60051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	productServiceAddr := os.Getenv("PRODUCT_SERVICE_ADDR")
+	if productServiceAddr == "" {
+		productServiceAddr = "product-service:60051"
+	}
+	productConn, err := grpc.Dial(productServiceAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Failed to connect to product service: %v", err)
 	}
@@ -90,10 +102,12 @@ func main() {
 		log.Fatalf("Failed to listen: %v", err)
 	}
 
+	log.Printf("Attempting to register order-service with Consul on port %d", servicePort)
 	err = registerServiceWithConsul("order-service", servicePort)
 	if err != nil {
 		log.Fatalf("Failed to register service with Consul: %v", err)
 	}
+	log.Printf("Successfully registered order-service with Consul")
 
 	fmt.Println("Order service gRPC server starting on :40051")
 	if err := grpcServer.Serve(lis); err != nil {
