@@ -1,0 +1,51 @@
+name: Go CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    strategy:
+      matrix:
+        go-version: [1.22]
+        service:
+          - user_service
+          - order_service
+          - product_service
+          - api-gateway
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Show Go version
+        run: go version
+
+      - name: Check directory
+        run: |
+          echo "Running in ${{ matrix.service }}"
+          ls -lah
+          ls -lah ${{ matrix.service }}
+
+      - name: Tidy go.mod
+        run: go mod tidy
+        working-directory: ${{ matrix.service }}
+
+      - name: Build
+        run: go build -v ./...
+        working-directory: ${{ matrix.service }}
+
+      - name: Test
+        run: go test -v ./...
+        working-directory: ${{ matrix.service }}
