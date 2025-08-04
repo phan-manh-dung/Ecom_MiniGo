@@ -9,21 +9,22 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     strategy:
       matrix:
         go-version: [1.22]
         service:
-          - user-service
-          - order-service
-          - product-service
-          - api-gateway
+          - user_service
+          - order_service
+          - product_service
+          - api_gateway
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Go ${{ matrix.go-version }}
+      - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: ${{ matrix.go-version }}
@@ -31,7 +32,13 @@ jobs:
       - name: Show Go version
         run: go version
 
-      - name: Tidy up go.mod
+      - name: Check directory
+        run: |
+          echo "Running in ${{ matrix.service }}"
+          ls -lah
+          ls -lah ${{ matrix.service }}
+
+      - name: Tidy go.mod
         run: go mod tidy
         working-directory: ${{ matrix.service }}
 
