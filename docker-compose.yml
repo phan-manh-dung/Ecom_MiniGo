@@ -138,6 +138,26 @@ services:
         condition: service_started
     networks:
       - ecom-network
+      
+  # API Gateway Huma
+  api-gateway-huma:
+    build:
+      context: .
+      dockerfile: api-gateway-huma/Dockerfile
+    container_name: api-gateway-huma
+    ports:
+      - "8081:8081"
+    environment:
+      CONSUL_ADDR: consul:8500
+    depends_on:
+      user-service:
+        condition: service_started
+      product-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+    networks:
+      - ecom-network
 
 volumes:
   postgres_data:

@@ -7,13 +7,14 @@ import (
 )
 
 type UserRepository struct {
-	db *gorm.DB
+	db *gorm.DB // Dependency injection của database
 }
 
 func NewUserRepository(db *gorm.DB) *UserRepository {
-	return &UserRepository{db: db}
+	return &UserRepository{db: db} // Constructor pattern
 }
 
+// Lấy user theo ID với preload Account.Role
 func (r *UserRepository) GetByID(id uint) (*model.User, error) {
 	var user model.User
 	result := r.db.Preload("Account.Role").First(&user, id)
@@ -23,18 +24,22 @@ func (r *UserRepository) GetByID(id uint) (*model.User, error) {
 	return &user, nil
 }
 
+// Tạo user
 func (r *UserRepository) Create(user *model.User) error {
 	return r.db.Create(user).Error
 }
 
+// Cập nhật user
 func (r *UserRepository) Update(user *model.User) error {
 	return r.db.Save(user).Error
 }
 
+// Xóa user
 func (r *UserRepository) Delete(id uint) error {
 	return r.db.Delete(&model.User{}, id).Error
 }
 
+// Phân trang với offset/limit
 func (r *UserRepository) GetAll(page, limit int) ([]model.User, int64, error) {
 	var users []model.User
 	var total int64
@@ -54,6 +59,7 @@ func (r *UserRepository) GetAll(page, limit int) ([]model.User, int64, error) {
 	return users, total, nil
 }
 
+// Tìm user theo số điện thoại
 func (r *UserRepository) GetBySDT(sdt string) (*model.User, error) {
 	var user model.User
 	result := r.db.Preload("Account.Role").Where("sdt = ?", sdt).First(&user)

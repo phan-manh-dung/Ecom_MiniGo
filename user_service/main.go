@@ -38,7 +38,7 @@ func registerServiceWithConsul(serviceName string, servicePort int) error {
 		return err
 	}
 
-	// Sử dụng container name thay vì localhost
+	// Sử dụng container name
 	host := "user-service"
 
 	registration := &api.AgentServiceRegistration{

@@ -92,7 +92,6 @@ func (s *OrderService) CancelOrder(ctx context.Context, req *order.CancelOrderRe
 	}
 
 	// 5. Publish Redis event
-	// Trong thực tế, cần lấy user email từ User Service
 	userEmail := "dungcongnghiep4@gmail.com" // Placeholder
 	err = redis.PublishOrderCancelled(ctx, uint32(req.OrderId), uint32(ord.UserID), userEmail)
 	if err != nil {

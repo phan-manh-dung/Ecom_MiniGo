@@ -1,5 +1,9 @@
 package handler
 
+// Implement các method từ protobuf definition
+// Protocol Translation: Chuyển đổi giữa gRPC request/response và service layer
+// Error Handling: Xử lý lỗi và trả về gRPC status codes chuẩn
+// Request Delegation: Chuyển request xuống service layer xử lý
 import (
 	"context"
 
