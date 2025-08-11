@@ -122,7 +122,7 @@ func main() {
 		log.Fatalf("Failed to listen: %v", err)
 	}
 
-	// note
+	//
 	// Đăng ký Consul trước khi serve
 	log.Printf("Attempting to register user-service with Consul on port %d", servicePort)
 	err = registerServiceWithConsul("user-service", servicePort)
