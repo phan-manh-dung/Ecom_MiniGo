@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	SecretKey = "your-secret-key-here" // Trong production nên dùng environment variable
+	SecretKey = "f98fs9dhDFEfd0"
 )
 
 // Claims định nghĩa cấu trúc JWT claims
