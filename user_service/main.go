@@ -116,7 +116,7 @@ func main() {
 	// Register user service
 	user.RegisterUserServiceServer(grpcServer, userHandler)
 
-	// Listen on port 50051
+	// Listen on port
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", servicePort))
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
