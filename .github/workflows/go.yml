@@ -19,6 +19,7 @@ jobs:
           - order_service
           - product_service
           - api-gateway
+          - api-gateway-huma
 
     steps:
       - name: Checkout code
