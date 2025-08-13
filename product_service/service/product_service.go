@@ -6,6 +6,7 @@ import (
 	"gin/product_service/model"
 	"gin/product_service/repository"
 	"gin/proto/generated/product"
+	"gin/shared/generic"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/gorm"
@@ -13,11 +14,13 @@ import (
 
 type ProductService struct {
 	productRepo *repository.ProductRepository
+	generic     *generic.GenericHandler
 }
 
 func NewProductService(productRepo *repository.ProductRepository) *ProductService {
 	return &ProductService{
 		productRepo: productRepo,
+		generic:     generic.NewGenericHandler(),
 	}
 }
 
@@ -38,7 +41,7 @@ func (s *ProductService) GetProduct(ctx context.Context, id uint32) (*product.Ge
 
 	return &product.GetProductResponse{
 		Product: protoProduct,
-		Message: "User retrieved successfully",
+		Message: "Product retrieved successfully",
 	}, nil
 }
 
@@ -58,7 +61,7 @@ func (s *ProductService) CreateProduct(ctx context.Context, req *product.CreateP
 
 	// error
 	if err := s.productRepo.Create(productModel); err != nil {
-		return nil, fmt.Errorf("failed to create user: %v", err)
+		return nil, fmt.Errorf("failed to create product: %v", err)
 	}
 
 	// convert to proto
@@ -68,7 +71,6 @@ func (s *ProductService) CreateProduct(ctx context.Context, req *product.CreateP
 		Product: protoProduct,
 		Message: "Product create successfully",
 	}, nil
-
 }
 
 func (s *ProductService) UpdateProduct(ctx context.Context, req *product.UpdateProductRequest) (*product.UpdateProductResponse, error) {
@@ -148,7 +150,7 @@ func (s *ProductService) IncreaseInventory(ctx context.Context, req *product.Inc
 	}
 	err := s.productRepo.IncreaseInventory(uint(req.ProductId), int(req.Quantity))
 	if err != nil {
-		return nil, fmt.Errorf("failed to increase inventory: %v", err)
+		return nil, fmt.Errorf("quantity must be greater than 0")
 	}
 	return &product.IncreaseInventoryResponse{
 		Message: "Inventory increased successfully",

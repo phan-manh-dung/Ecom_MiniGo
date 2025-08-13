@@ -75,13 +75,13 @@ type OrderItem struct {
 }
 
 type OrderResponse struct {
-	ID         uint32      `json:"id" example:"1"`
-	UserID     uint32      `json:"user_id" example:"1"`
-	TotalPrice float32     `json:"total_price" example:"1999.98"`
-	Status     string      `json:"status" example:"pending"`
-	Items      []OrderItem `json:"items"`
-	CreatedAt  time.Time   `json:"created_at"`
-	UpdatedAt  time.Time   `json:"updated_at"`
+	ID          uint32      `json:"id" example:"1"`
+	UserID      uint32      `json:"user_id" example:"1"`
+	TotalPrice  float32     `json:"total_price" example:"1999.98"`
+	OrderStatus int         `json:"status" example:"1"`
+	Items       []OrderItem `json:"items"`
+	CreatedAt   time.Time   `json:"created_at"`
+	UpdatedAt   time.Time   `json:"updated_at"`
 }
 
 type ListOrdersResponse struct {
@@ -109,3 +109,10 @@ type ErrorResponse struct {
 type SuccessResponse struct {
 	Message string `json:"message" example:"Operation completed successfully"`
 }
+
+// Order status constants
+const (
+	OrderStatusPending   = 0
+	OrderStatusCompleted = 1
+	OrderStatusCancelled = 2
+)

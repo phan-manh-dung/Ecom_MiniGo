@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"gin/proto/generated/user"
+	"gin/shared/generic"
 	"gin/user_service/model"
 	"gin/user_service/repository"
 
@@ -12,12 +13,14 @@ import (
 )
 
 type UserService struct {
+	*generic.BaseService
 	userRepo *repository.UserRepository
 }
 
 func NewUserService(userRepo *repository.UserRepository) *UserService {
 	return &UserService{
-		userRepo: userRepo,
+		BaseService: generic.NewBaseService(),
+		userRepo:    userRepo,
 	}
 }
 
@@ -116,15 +119,19 @@ func (s *UserService) UpdateUser(ctx context.Context, req *user.UpdateUserReques
 		}
 		return nil, fmt.Errorf("failed to get user: %v", err)
 	}
+
+	// Update fields if provided
 	if req.Name != "" {
 		userModel.Name = req.Name
 	}
 	if req.Sdt != "" {
 		userModel.SDT = req.Sdt
 	}
+
 	if err := s.userRepo.Update(userModel); err != nil {
 		return nil, fmt.Errorf("failed to update user: %v", err)
 	}
+
 	protoUser := s.convertToProtoUser(userModel)
 	return &user.UpdateUserResponse{
 		User:    protoUser,
@@ -145,20 +152,25 @@ func (s *UserService) DeleteUser(ctx context.Context, req *user.DeleteUserReques
 
 // ListUsers business logic
 func (s *UserService) ListUsers(ctx context.Context, req *user.ListUsersRequest) (*user.ListUsersResponse, error) {
-	if req.Page <= 0 {
-		req.Page = 1
+	// Set default pagination
+	page, limit := int(req.Page), int(req.Limit)
+	if page <= 0 {
+		page = 1
 	}
-	if req.Limit <= 0 {
-		req.Limit = 10
+	if limit <= 0 {
+		limit = 10
 	}
-	users, total, err := s.userRepo.GetAll(int(req.Page), int(req.Limit))
+
+	users, total, err := s.userRepo.GetAll(page, limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list users: %v", err)
 	}
+
 	protoUsers := make([]*user.User, 0, len(users))
 	for _, u := range users {
 		protoUsers = append(protoUsers, s.convertToProtoUser(&u))
 	}
+
 	return &user.ListUsersResponse{
 		Users:   protoUsers,
 		Total:   int32(total),
@@ -178,10 +190,12 @@ func (s *UserService) GetRole(ctx context.Context, req *user.GetRoleRequest) (*u
 		}
 		return nil, fmt.Errorf("failed to get role: %v", err)
 	}
+
 	protoRole := &user.Role{
 		Id:   uint32(roleModel.ID),
 		Name: roleModel.Name,
 	}
+
 	return &user.GetRoleResponse{
 		Role:    protoRole,
 		Message: "Role retrieved successfully",
@@ -190,16 +204,20 @@ func (s *UserService) GetRole(ctx context.Context, req *user.GetRoleRequest) (*u
 
 // ListRoles business logic
 func (s *UserService) ListRoles(ctx context.Context, req *user.ListRolesRequest) (*user.ListRolesResponse, error) {
-	if req.Page <= 0 {
-		req.Page = 1
+	// Set default pagination
+	page, limit := int(req.Page), int(req.Limit)
+	if page <= 0 {
+		page = 1
 	}
-	if req.Limit <= 0 {
-		req.Limit = 10
+	if limit <= 0 {
+		limit = 10
 	}
-	roles, total, err := s.userRepo.ListRoles(int(req.Page), int(req.Limit))
+
+	roles, total, err := s.userRepo.ListRoles(page, limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list roles: %v", err)
 	}
+
 	protoRoles := make([]*user.Role, 0, len(roles))
 	for _, r := range roles {
 		protoRoles = append(protoRoles, &user.Role{
@@ -207,6 +225,7 @@ func (s *UserService) ListRoles(ctx context.Context, req *user.ListRolesRequest)
 			Name: r.Name,
 		})
 	}
+
 	return &user.ListRolesResponse{
 		Roles:   protoRoles,
 		Total:   int32(total),

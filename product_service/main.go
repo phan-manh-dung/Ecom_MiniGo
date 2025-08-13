@@ -68,7 +68,7 @@ func main() {
 	}
 
 	// init layer
-	productRepo := repository.NewUserRepository(db.DB)
+	productRepo := repository.NewProductRepository(db.DB)
 	productService := service.NewProductService(productRepo)
 	productHandler := handler.NewProductHandler(productService)
 

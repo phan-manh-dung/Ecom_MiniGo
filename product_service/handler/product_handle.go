@@ -4,67 +4,43 @@ import (
 	"context"
 	"gin/product_service/service"
 	"gin/proto/generated/product"
-
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"gin/shared/generic"
 )
 
 type ProductHandler struct {
 	productService *service.ProductService
+	generic        *generic.GenericHandler
 	product.UnimplementedProductServiceServer
 }
 
 func NewProductHandler(productService *service.ProductService) *ProductHandler {
 	return &ProductHandler{
 		productService: productService,
+		generic:        generic.NewGenericHandler(),
 	}
 }
 
 // get product
 func (h *ProductHandler) GetProduct(ctx context.Context, req *product.GetProductRequest) (*product.GetProductResponse, error) {
-	response, err := h.productService.GetProduct(ctx, req.Id)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to get product")
-	}
-	return response, nil
+	return generic.HandleOperationWithID[uint32, *product.GetProductResponse, uint32](ctx, req.Id, h.productService.GetProduct, "get product")
 }
 
 func (h *ProductHandler) CreateProduct(ctx context.Context, req *product.CreateProductRequest) (*product.CreateProductResponse, error) {
-	response, err := h.productService.CreateProduct(ctx, req)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, " Failed to create product")
-	}
-	return response, nil
+	return generic.HandleOperation(ctx, req, h.productService.CreateProduct, "create product")
 }
 
 func (h *ProductHandler) UpdateProduct(ctx context.Context, req *product.UpdateProductRequest) (*product.UpdateProductResponse, error) {
-	response, err := h.productService.UpdateProduct(ctx, req)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to update product")
-	}
-	return response, nil
+	return generic.HandleOperation(ctx, req, h.productService.UpdateProduct, "update product")
 }
 
 func (h *ProductHandler) DeleteProduct(ctx context.Context, req *product.DeleteProductRequest) (*product.DeleteProductResponse, error) {
-	response, err := h.productService.DeleteProduct(ctx, req.Id)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to delete product")
-	}
-	return response, nil
+	return generic.HandleOperationWithID[uint32, *product.DeleteProductResponse, uint32](ctx, req.Id, h.productService.DeleteProduct, "delete product")
 }
 
 func (h *ProductHandler) DecreaseInventory(ctx context.Context, req *product.DecreaseInventoryRequest) (*product.DecreaseInventoryResponse, error) {
-	response, err := h.productService.DecreaseInventory(ctx, req)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to decrease inventory")
-	}
-	return response, nil
+	return generic.HandleOperation(ctx, req, h.productService.DecreaseInventory, "decrease inventory")
 }
 
 func (h *ProductHandler) IncreaseInventory(ctx context.Context, req *product.IncreaseInventoryRequest) (*product.IncreaseInventoryResponse, error) {
-	response, err := h.productService.IncreaseInventory(ctx, req)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "Failed to increase inventory")
-	}
-	return response, nil
+	return generic.HandleOperation(ctx, req, h.productService.IncreaseInventory, "increase inventory")
 }

@@ -2,21 +2,29 @@ package repository
 
 import (
 	"gin/product_service/model"
+	"gin/shared/generic"
 
 	"gorm.io/gorm"
 )
 
 type ProductRepository struct {
-	db *gorm.DB
+	*generic.BaseRepository
 }
 
-func NewUserRepository(db *gorm.DB) *ProductRepository {
-	return &ProductRepository{db: db}
+func NewProductRepository(db *gorm.DB) *ProductRepository {
+	return &ProductRepository{
+		BaseRepository: generic.NewBaseRepository(db),
+	}
 }
 
+// GetProduct - alias cho GetByID để tương thích với service
 func (r *ProductRepository) GetProduct(id uint) (*model.Product, error) {
+	return generic.GenericGetByID[model.Product, uint](r.GetDB(), id)
+}
+
+func (r *ProductRepository) GetByID(id uint) (*model.Product, error) {
 	var product model.Product
-	result := r.db.Find(&product, id)
+	result := r.GetDB().First(&product, id)
 	if result.Error != nil {
 		return nil, result.Error
 	}
@@ -24,32 +32,29 @@ func (r *ProductRepository) GetProduct(id uint) (*model.Product, error) {
 }
 
 func (r *ProductRepository) Create(product *model.Product) error {
-	return r.db.Create(product).Error
+	return generic.GenericCreate(r.GetDB(), product)
 }
 
 func (r *ProductRepository) Update(product *model.Product) error {
-	return r.db.Save(product).Error
+	return generic.GenericUpdate(r.GetDB(), product)
 }
 
 func (r *ProductRepository) Delete(id uint) error {
-	return r.db.Delete(&model.Product{}, id).Error
+	return generic.GenericDelete[model.Product, uint](r.GetDB(), id)
 }
 
 func (r *ProductRepository) DecreaseInventory(productId uint, quantity int) error {
 	var inventory model.Inventory
-	if err := r.db.Where("product_id = ?", productId).First(&inventory).Error; err != nil {
+	if err := r.GetDB().Where("product_id = ?", productId).First(&inventory).Error; err != nil {
 		return err
 	}
-	if inventory.Quantity < quantity {
-		return gorm.ErrInvalidData // hoặc custom error "not enough inventory"
-	}
-	return r.db.Model(&inventory).Update("quantity", inventory.Quantity-quantity).Error
+	return r.GetDB().Model(&inventory).Update("quantity", inventory.Quantity-quantity).Error
 }
 
 func (r *ProductRepository) IncreaseInventory(productId uint, quantity int) error {
 	var inventory model.Inventory
-	if err := r.db.Where("product_id = ?", productId).First(&inventory).Error; err != nil {
+	if err := r.GetDB().Where("product_id = ?", productId).First(&inventory).Error; err != nil {
 		return err
 	}
-	return r.db.Model(&inventory).Update("quantity", inventory.Quantity+quantity).Error
+	return r.GetDB().Model(&inventory).Update("quantity", inventory.Quantity+quantity).Error
 }

@@ -256,13 +256,13 @@ func (h *Handlers) CreateOrderHandler(ctx context.Context, input *CreateOrderReq
 	}
 
 	return &OrderResponse{
-		ID:         1,
-		UserID:     input.UserID,
-		TotalPrice: 1999.98,
-		Status:     "pending",
-		Items:      orderItems,
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
+		ID:          1,
+		UserID:      input.UserID,
+		TotalPrice:  1999.98,
+		OrderStatus: OrderStatusPending,
+		Items:       orderItems,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
 	}, nil
 }
 
@@ -285,13 +285,13 @@ func (h *Handlers) GetOrderHandler(ctx context.Context, input *struct {
 	}
 
 	return &OrderResponse{
-		ID:         uint32(id),
-		UserID:     1,
-		TotalPrice: 1999.98,
-		Status:     "pending",
-		Items:      orderItems,
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
+		ID:          uint32(id),
+		UserID:      1,
+		TotalPrice:  1999.98,
+		OrderStatus: OrderStatusPending,
+		Items:       orderItems,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
 	}, nil
 }
 
@@ -314,13 +314,13 @@ func (h *Handlers) CancelOrderHandler(ctx context.Context, input *struct {
 	}
 
 	return &OrderResponse{
-		ID:         uint32(id),
-		UserID:     1,
-		TotalPrice: 1999.98,
-		Status:     "cancelled",
-		Items:      orderItems,
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
+		ID:          uint32(id),
+		UserID:      1,
+		TotalPrice:  1999.98,
+		OrderStatus: OrderStatusCancelled,
+		Items:       orderItems,
+		CreatedAt:   time.Now(),
+		UpdatedAt:   time.Now(),
 	}, nil
 }
 
@@ -347,22 +347,22 @@ func (h *Handlers) ListOrdersHandler(ctx context.Context, input *struct {
 
 	orders := []OrderResponse{
 		{
-			ID:         1,
-			UserID:     1,
-			TotalPrice: 1999.98,
-			Status:     "pending",
-			Items:      orderItems,
-			CreatedAt:  time.Now(),
-			UpdatedAt:  time.Now(),
+			ID:          1,
+			UserID:      1,
+			TotalPrice:  1999.98,
+			OrderStatus: OrderStatusPending,
+			Items:       orderItems,
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
 		},
 		{
-			ID:         2,
-			UserID:     2,
-			TotalPrice: 2999.97,
-			Status:     "completed",
-			Items:      orderItems,
-			CreatedAt:  time.Now(),
-			UpdatedAt:  time.Now(),
+			ID:          2,
+			UserID:      2,
+			TotalPrice:  2999.97,
+			OrderStatus: OrderStatusCompleted,
+			Items:       orderItems,
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
 		},
 	}
 
