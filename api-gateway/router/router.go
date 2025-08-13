@@ -2,7 +2,6 @@ package router
 
 import (
 	"gin/api-gateway/handler"
-	"gin/api-gateway/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -17,19 +16,15 @@ func NewRouter() *Router {
 	}
 }
 
-// SetupRoutes thiết lập routes với middleware và handlers
+// SetupRoutes thiết lập routes với handlers (KHÔNG áp dụng middleware)
 func (r *Router) SetupRoutes(
 	userHandler *handler.UserServiceClient,
 	productHandler *handler.ProductServiceClient,
 	orderHandler *handler.OrderServiceClient,
 ) *gin.Engine {
 
-	// 1. Áp dụng middleware theo thứ tự (từ ngoài vào trong)
-	r.engine.Use(middleware.NewCORSMiddleware())      // CORS middleware (outermost)
-	r.engine.Use(middleware.NewRequestIDMiddleware()) // Request ID middleware
-	r.engine.Use(middleware.NewAuthMiddleware())      // Authentication middleware (innermost)
-
-	// 2. Setup routes với handlers đã được inject
+	// CHỈ setup routes, KHÔNG áp dụng middleware
+	// Middleware sẽ được áp dụng trong wire.go
 	r.setupUserRoutes(userHandler)
 	r.setupProductRoutes(productHandler)
 	r.setupOrderRoutes(orderHandler)
