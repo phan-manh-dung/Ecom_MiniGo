@@ -92,6 +92,10 @@ func (r *Router) setupProtectedRoutes(
 			adminGroup.PUT("/products/:id", productHandler.UpdateProduct)
 			adminGroup.DELETE("/products/:id", productHandler.DeleteProduct)
 			adminGroup.POST("/products/", productHandler.CreateProduct)
+
+			// Report routes
+			reportHandler := handler.NewReportHandler()
+			adminGroup.POST("/reports/generate", reportHandler.GenerateReport)
 		}
 	}
 }
