@@ -56,7 +56,20 @@ func (h *ReportHandler) GenerateReport(c *gin.Context) {
 		return
 	}
 
-	// Parse response
+	// Check if response is CSV (not JSON)
+	contentType := resp.Header.Get("Content-Type")
+	if contentType == "text/csv" {
+		// Forward CSV response directly
+		for key, values := range resp.Header {
+			for _, value := range values {
+				c.Header(key, value)
+			}
+		}
+		c.Data(resp.StatusCode, contentType, respBody)
+		return
+	}
+
+	// Parse JSON response for other cases
 	var response map[string]interface{}
 	if err := json.Unmarshal(respBody, &response); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -66,6 +79,6 @@ func (h *ReportHandler) GenerateReport(c *gin.Context) {
 		return
 	}
 
-	// Forward response status và body
+	// Forward JSON response
 	c.JSON(resp.StatusCode, response)
 }

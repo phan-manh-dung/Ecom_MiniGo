@@ -3,7 +3,6 @@ package handler
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	"report-service/service"
 
@@ -77,15 +76,10 @@ func (h *ReportHandler) GenerateReport(c *gin.Context) {
 		return
 	}
 
-	// Return success response
-	c.JSON(http.StatusOK, gin.H{
-		"success":      true,
-		"data":         csvData,
-		"filename":     filename,
-		"generated_at": time.Now().Format(time.RFC3339),
-		"message":      "Report generated successfully",
-		"type":         req.Type,
-	})
+	// Return CSV file for download
+	c.Header("Content-Type", "text/csv")
+	c.Header("Content-Disposition", "attachment; filename="+filename)
+	c.Data(http.StatusOK, "text/csv", []byte(csvData))
 }
 
 // validateRequest kiểm tra tính hợp lệ của request
