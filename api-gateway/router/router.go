@@ -44,6 +44,7 @@ func (r *Router) setupPublicRoutes(userHandler *handler.UserServiceClient) {
 	authGroup := r.engine.Group("/api/auth")
 	{
 		authGroup.POST("/login", userHandler.Login)
+		authGroup.POST("/register", userHandler.CreateUser)
 	}
 }
 
@@ -60,7 +61,6 @@ func (r *Router) setupProtectedRoutes(
 		// User routes
 		userGroup := protectedGroup.Group("/users")
 		{
-			userGroup.POST("/", userHandler.CreateUser)
 			userGroup.GET("/:id", userHandler.GetUser)
 			userGroup.PUT("/:id", userHandler.UpdateUser)
 			userGroup.DELETE("/:id", userHandler.DeleteUser)

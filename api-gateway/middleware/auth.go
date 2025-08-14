@@ -12,20 +12,6 @@ import (
 // NewAuthMiddleware tạo Authentication middleware
 func NewAuthMiddleware() gin.HandlerFunc {
 	return gin.HandlerFunc(func(c *gin.Context) {
-		// Bỏ qua auth cho public routes
-		publicPaths := []string{
-			"/health",
-			"/api/auth/login",
-			"/api/auth/register", // Nếu có register endpoint
-		}
-		
-		for _, path := range publicPaths {
-			if c.Request.URL.Path == path {
-				c.Next()
-				return
-			}
-		}
-		
 		// Lấy token từ header
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -35,7 +21,7 @@ func NewAuthMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		
+
 		// Kiểm tra format: "Bearer <token>"
 		tokenParts := strings.Split(authHeader, " ")
 		if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
@@ -45,9 +31,9 @@ func NewAuthMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		
+
 		token := tokenParts[1]
-		
+
 		// Validate JWT token
 		claims, err := utils.ValidateToken(token)
 		if err != nil {
@@ -57,12 +43,12 @@ func NewAuthMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		
+
 		// Set user info vào context để các middleware khác sử dụng
 		c.Set("user_id", claims.UserID)
 		c.Set("user_name", claims.Username)
 		c.Set("role", claims.Role)
-		
+
 		// Token hợp lệ, tiếp tục
 		c.Next()
 	})
