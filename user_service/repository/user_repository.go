@@ -5,7 +5,6 @@ package repository
 import (
 	"gin/shared/generic"
 	"gin/user_service/model"
-
 	"gorm.io/gorm"
 )
 
@@ -32,6 +31,11 @@ func (r *UserRepository) GetByID(id uint) (*model.User, error) {
 // Tạo user
 func (r *UserRepository) Create(user *model.User) error {
 	return generic.GenericCreate(r.GetDB(), user)
+}
+
+// Tạo account
+func (r *UserRepository) CreateAccount(account *model.Account) error {
+	return generic.GenericCreate(r.GetDB(), account)
 }
 
 // Cập nhật user
@@ -64,9 +68,14 @@ func (r *UserRepository) GetAll(page, limit int) ([]model.User, int64, error) {
 	return users, total, nil
 }
 
-// Tìm user theo số điện thoại
+// Tìm user theo số điện thoại với preload Account.Role
 func (r *UserRepository) GetBySDT(sdt string) (*model.User, error) {
-	return generic.GenericGetByField[model.User](r.GetDB(), "sdt", sdt)
+	var user model.User
+	result := r.GetDB().Preload("Account.Role").Where("sdt = ?", sdt).First(&user)
+	if result.Error != nil {
+		return nil, result.Error
+	}
+	return &user, nil
 }
 
 func (r *UserRepository) GetRoleByID(id uint) (*model.Role, error) {

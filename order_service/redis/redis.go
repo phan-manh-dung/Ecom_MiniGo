@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"os"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -13,10 +14,15 @@ var RedisClient *redis.Client
 // InitRedis khởi tạo Redis client
 func InitRedis() {
 
+	// Get Redis address from environment variable, default to localhost
+	redisAddr := os.Getenv("REDIS_ADDR")
+	if redisAddr == "" {
+		redisAddr = "localhost:6379"
+	}
+
 	RedisClient = redis.NewClient(&redis.Options{
-		Addr:     "redis-19112.c52.us-east-1-4.ec2.redns.redis-cloud.com:19112",
-		Username: "default",
-		Password: "pA4GVyJVQTLUeCXNBsKnauUAtKQND7Jl",
+		Addr:     redisAddr,
+		Password: "", // No password for local Redis
 		DB:       0,
 	})
 
@@ -27,7 +33,7 @@ func InitRedis() {
 		log.Fatalf("Failed to connect to Redis: %v", err)
 	}
 
-	log.Println("Connected to Redis Cloud successfully")
+	log.Println("Connected to Redis successfully")
 }
 
 // [Tạo PublishOrderCancelled publish event] khi order bị hủy

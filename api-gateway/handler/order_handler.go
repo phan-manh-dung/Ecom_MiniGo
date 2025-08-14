@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"gin/api-gateway/service_manager"
 	"gin/proto/generated/order"
 	"net/http"
 	"strconv"
@@ -10,14 +11,19 @@ import (
 )
 
 type OrderServiceClient struct {
-	Client order.OrderServiceClient
+	ServiceManager *service_manager.ServiceManager
 }
 
-func NewOrderServiceClient(client order.OrderServiceClient) *OrderServiceClient {
-	return &OrderServiceClient{Client: client}
+func NewOrderServiceClient(serviceManager *service_manager.ServiceManager) *OrderServiceClient {
+	return &OrderServiceClient{ServiceManager: serviceManager}
 }
 
 func (o *OrderServiceClient) GetOrder(c *gin.Context) {
+	if o.ServiceManager == nil || o.ServiceManager.OrderClient == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Order service not available"})
+		return
+	}
+
 	orderIdParam := c.Param("id")
 	orderId, err := strconv.ParseUint(orderIdParam, 10, 32)
 	if err != nil {
@@ -25,7 +31,7 @@ func (o *OrderServiceClient) GetOrder(c *gin.Context) {
 		return
 	}
 	req := &order.GetOrderRequest{Id: uint32(orderId)}
-	resp, err := o.Client.GetOrder(context.Background(), req)
+	resp, err := o.ServiceManager.OrderClient.GetOrder(context.Background(), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -34,14 +40,19 @@ func (o *OrderServiceClient) GetOrder(c *gin.Context) {
 }
 
 func (o *OrderServiceClient) GetOrdersByUser(c *gin.Context) {
-	userIdParam := c.Param("user_id")
+	if o.ServiceManager == nil || o.ServiceManager.OrderClient == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Order service not available"})
+		return
+	}
+
+	userIdParam := c.Param("userId")
 	userId, err := strconv.ParseUint(userIdParam, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid userId"})
 		return
 	}
 	req := &order.GetOrdersByUserRequest{UserId: uint32(userId)}
-	resp, err := o.Client.GetOrdersByUser(context.Background(), req)
+	resp, err := o.ServiceManager.OrderClient.GetOrdersByUser(context.Background(), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -50,6 +61,11 @@ func (o *OrderServiceClient) GetOrdersByUser(c *gin.Context) {
 }
 
 func (o *OrderServiceClient) CreateOrder(c *gin.Context) {
+	if o.ServiceManager == nil || o.ServiceManager.OrderClient == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Order service not available"})
+		return
+	}
+
 	var createReq struct {
 		UserId uint32 `json:"user_id" binding:"required"`
 		Items  []struct {
@@ -74,7 +90,7 @@ func (o *OrderServiceClient) CreateOrder(c *gin.Context) {
 		UserId: createReq.UserId,
 		Items:  items,
 	}
-	resp, err := o.Client.CreateOrder(context.Background(), req)
+	resp, err := o.ServiceManager.OrderClient.CreateOrder(context.Background(), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -83,6 +99,11 @@ func (o *OrderServiceClient) CreateOrder(c *gin.Context) {
 }
 
 func (o *OrderServiceClient) UpdateOrderStatus(c *gin.Context) {
+	if o.ServiceManager == nil || o.ServiceManager.OrderClient == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Order service not available"})
+		return
+	}
+
 	orderIdParam := c.Param("id")
 	orderId, err := strconv.ParseUint(orderIdParam, 10, 32)
 	if err != nil {
@@ -100,7 +121,7 @@ func (o *OrderServiceClient) UpdateOrderStatus(c *gin.Context) {
 		OrderId: uint32(orderId),
 		Status:  statusReq.Status,
 	}
-	resp, err := o.Client.UpdateOrderStatus(context.Background(), req)
+	resp, err := o.ServiceManager.OrderClient.UpdateOrderStatus(context.Background(), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -109,6 +130,11 @@ func (o *OrderServiceClient) UpdateOrderStatus(c *gin.Context) {
 }
 
 func (o *OrderServiceClient) GetOrderDetails(c *gin.Context) {
+	if o.ServiceManager == nil || o.ServiceManager.OrderClient == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Order service not available"})
+		return
+	}
+
 	orderIdParam := c.Param("id")
 	orderId, err := strconv.ParseUint(orderIdParam, 10, 32)
 	if err != nil {
@@ -116,7 +142,7 @@ func (o *OrderServiceClient) GetOrderDetails(c *gin.Context) {
 		return
 	}
 	req := &order.GetOrderDetailsRequest{OrderId: uint32(orderId)}
-	resp, err := o.Client.GetOrderDetails(context.Background(), req)
+	resp, err := o.ServiceManager.OrderClient.GetOrderDetails(context.Background(), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -125,6 +151,11 @@ func (o *OrderServiceClient) GetOrderDetails(c *gin.Context) {
 }
 
 func (o *OrderServiceClient) CancelOrder(c *gin.Context) {
+	if o.ServiceManager == nil || o.ServiceManager.OrderClient == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Order service not available"})
+		return
+	}
+
 	orderIdParam := c.Param("id")
 	orderId, err := strconv.ParseUint(orderIdParam, 10, 32)
 	if err != nil {
@@ -135,7 +166,7 @@ func (o *OrderServiceClient) CancelOrder(c *gin.Context) {
 	req := &order.CancelOrderRequest{
 		OrderId: uint32(orderId),
 	}
-	resp, err := o.Client.CancelOrder(context.Background(), req)
+	resp, err := o.ServiceManager.OrderClient.CancelOrder(context.Background(), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

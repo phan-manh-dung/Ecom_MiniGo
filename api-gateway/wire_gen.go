@@ -7,6 +7,10 @@
 package main
 
 import (
+	"gin/api-gateway/handler"
+	"gin/api-gateway/middleware"
+	"gin/api-gateway/router"
+	"gin/api-gateway/service_manager"
 	"github.com/gin-gonic/gin"
 )
 
@@ -14,13 +18,68 @@ import (
 
 // wireApp khởi tạo toàn bộ application với dependency injection
 func wireApp() (*gin.Engine, error) {
-	engine := provideGinEngine()
+	serviceManager, err := service_manager.NewServiceManager()
+	if err != nil {
+		return nil, err
+	}
+	userServiceClient := handler.NewUserServiceClient(serviceManager)
+	productServiceClient := handler.NewProductServiceClient(serviceManager)
+	orderServiceClient := handler.NewOrderServiceClient(serviceManager)
+	corsMiddleware := provideCORSMiddleware()
+	requestIDMiddleware := provideRequestIDMiddleware()
+	loggingMiddleware := provideLoggingMiddleware()
+	authMiddleware := provideAuthMiddleware()
+	routerRouter := router.NewRouter()
+	engine := provideApp(serviceManager, userServiceClient, productServiceClient, orderServiceClient, corsMiddleware, requestIDMiddleware, loggingMiddleware, authMiddleware, routerRouter)
 	return engine, nil
 }
 
 // wire.go:
 
-// provideGinEngine tạo gin engine đơn giản
-func provideGinEngine() *gin.Engine {
-	return gin.New()
+// ==== Định nghĩa type mới cho từng middleware để tránh conflict ====
+type CORSMiddleware gin.HandlerFunc
+
+type RequestIDMiddleware gin.HandlerFunc
+
+type LoggingMiddleware gin.HandlerFunc
+
+type AuthMiddleware gin.HandlerFunc
+
+// ==== Provider functions cho từng middleware ====
+func provideCORSMiddleware() CORSMiddleware {
+	return CORSMiddleware(middleware.NewCORSMiddleware())
+}
+
+func provideRequestIDMiddleware() RequestIDMiddleware {
+	return RequestIDMiddleware(middleware.NewRequestIDMiddleware())
+}
+
+func provideLoggingMiddleware() LoggingMiddleware {
+	return LoggingMiddleware(middleware.NewLoggingMiddleware())
+}
+
+func provideAuthMiddleware() AuthMiddleware {
+	return AuthMiddleware(middleware.NewAuthMiddleware())
+}
+
+// ==== Provider App ====
+func provideApp(
+	serviceManager *service_manager.ServiceManager,
+	userHandler *handler.UserServiceClient,
+	productHandler *handler.ProductServiceClient,
+	orderHandler *handler.OrderServiceClient,
+	corsMiddleware CORSMiddleware,
+	requestIDMiddleware RequestIDMiddleware,
+	loggingMiddleware LoggingMiddleware,
+	authMiddleware AuthMiddleware, router2 *router.Router,
+) *gin.Engine {
+
+	engine := router2.SetupRoutes(userHandler, productHandler, orderHandler)
+
+	engine.Use(gin.HandlerFunc(corsMiddleware))
+	engine.Use(gin.HandlerFunc(requestIDMiddleware))
+	engine.Use(gin.HandlerFunc(loggingMiddleware))
+	engine.Use(gin.HandlerFunc(authMiddleware))
+
+	return engine
 }

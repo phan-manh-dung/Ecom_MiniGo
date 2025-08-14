@@ -13,72 +13,68 @@ import (
 	"github.com/google/wire"
 )
 
+// ==== Định nghĩa type mới cho từng middleware để tránh conflict ====
+type CORSMiddleware gin.HandlerFunc
+type RequestIDMiddleware gin.HandlerFunc
+type LoggingMiddleware gin.HandlerFunc
+
 // wireApp khởi tạo toàn bộ application với dependency injection
 func wireApp() (*gin.Engine, error) {
 	wire.Build(
 		// 1. Tạo Service Manager
 		service_manager.NewServiceManager,
 
-		// 2. Tạo gRPC Clients từ Service Manager
-		provideUserClient,
-		provideProductClient,
-		provideOrderClient,
-
-		// 3. Tạo Handlers
+		// 2. Tạo Handlers với Service Manager
 		handler.NewUserServiceClient,
 		handler.NewProductServiceClient,
 		handler.NewOrderServiceClient,
 
-		// 4. Tạo Middleware
-		middleware.NewCORSMiddleware,
-		middleware.NewRequestIDMiddleware,
-		middleware.NewLoggingMiddleware,
-		middleware.NewAuthMiddleware,
+		// 3. Tạo Global Middleware (mỗi cái một type riêng)
+		provideCORSMiddleware,
+		provideRequestIDMiddleware,
+		provideLoggingMiddleware,
 
-		// 5. Tạo Router
+		// 4. Tạo Router
 		router.NewRouter,
 
-		// 6. Tạo App với tất cả dependencies
+		// 5. Tạo App với tất cả dependencies
 		provideApp,
 	)
 	return &gin.Engine{}, nil
 }
 
-// provideUserClient tạo User gRPC client
-func provideUserClient(serviceManager *service_manager.ServiceManager) interface{} {
-	return serviceManager.UserClient
+// ==== Provider functions cho từng middleware ====
+func provideCORSMiddleware() CORSMiddleware {
+	return CORSMiddleware(middleware.NewCORSMiddleware())
 }
 
-// provideProductClient tạo Product gRPC client
-func provideProductClient(serviceManager *service_manager.ServiceManager) interface{} {
-	return serviceManager.ProductClient
+func provideRequestIDMiddleware() RequestIDMiddleware {
+	return RequestIDMiddleware(middleware.NewRequestIDMiddleware())
 }
 
-// provideOrderClient tạo Order gRPC client
-func provideOrderClient(serviceManager *service_manager.ServiceManager) interface{} {
-	return serviceManager.OrderClient
+func provideLoggingMiddleware() LoggingMiddleware {
+	return LoggingMiddleware(middleware.NewLoggingMiddleware())
 }
 
-// provideApp tạo gin engine với tất cả dependencies
+// ==== Provider App ====
 func provideApp(
+	serviceManager *service_manager.ServiceManager,
 	userHandler *handler.UserServiceClient,
 	productHandler *handler.ProductServiceClient,
 	orderHandler *handler.OrderServiceClient,
-	corsMiddleware gin.HandlerFunc,
-	requestIDMiddleware gin.HandlerFunc,
-	loggingMiddleware gin.HandlerFunc,
-	authMiddleware gin.HandlerFunc,
+	corsMiddleware CORSMiddleware,
+	requestIDMiddleware RequestIDMiddleware,
+	loggingMiddleware LoggingMiddleware,
 	router *router.Router,
 ) *gin.Engine {
 
-	// 1. Setup routes trước (không có middleware)
+	// 1. Setup routes với handlers và middleware (đã được xử lý trong router)
 	engine := router.SetupRoutes(userHandler, productHandler, orderHandler)
 
-	// 2. Sau đó áp dụng middleware
-	engine.Use(corsMiddleware)      // CORS middleware (outermost)
-	engine.Use(requestIDMiddleware) // Request ID middleware
-	engine.Use(loggingMiddleware)   // Logging middleware
-	engine.Use(authMiddleware)      // Authentication middleware (innermost)
+	// 2. Áp dụng global middleware theo thứ tự đúng
+	engine.Use(gin.HandlerFunc(corsMiddleware))
+	engine.Use(gin.HandlerFunc(requestIDMiddleware))
+	engine.Use(gin.HandlerFunc(loggingMiddleware))
 
 	return engine
 }

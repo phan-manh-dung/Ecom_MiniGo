@@ -4,17 +4,18 @@ import "gorm.io/gorm"
 
 type Account struct {
 	gorm.Model
-	UserID uint  // foreign key đến User
-	User   *User // GORM tự map theo UserID
-	RoleID uint  // foreign key đến Role
-	Role   Role
+	UserID uint  `gorm:"not null"` // foreign key đến User
+	User   *User `gorm:"foreignKey:UserID"` // GORM tự map theo UserID
+	RoleID uint  `gorm:"not null"` // foreign key đến Role
+	Role   *Role `gorm:"foreignKey:RoleID"` // GORM tự map theo RoleID
 }
 
 type User struct {
 	gorm.Model
-	Name    string   `json:"name" binding:"required,min=2,max=50" validate:"required,min=2,max=50"`
-	SDT     string   `json:"sdt" gorm:"uniqueIndex" binding:"required,len=10" validate:"required,len=10"`
-	Account *Account // 1-1: mỗi user có 1 account
+	Name     string   `json:"name" binding:"required,min=2,max=50" validate:"required,min=2,max=50"`
+	SDT      string   `json:"sdt" gorm:"uniqueIndex" binding:"required,len=10" validate:"required,len=10"`
+	Password string   `json:"password" binding:"required,min=8" validate:"required,min=8"`
+	Account  *Account `gorm:"foreignKey:UserID"` // 1-1: mỗi user có 1 account
 }
 
 type Role struct {

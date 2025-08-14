@@ -34,8 +34,8 @@ func registerServiceWithConsul(serviceName string, servicePort int) error {
 		return err
 	}
 
-	// Sử dụng container name thay vì localhost
-	host := "product-service"
+	// Sử dụng localhost cho local development
+	host := "localhost"
 
 	registration := &api.AgentServiceRegistration{
 		ID:      fmt.Sprintf("%s-%d", serviceName, servicePort),
@@ -90,9 +90,11 @@ func main() {
 	log.Printf("Attempting to register product-service with Consul on port %d", servicePort)
 	err = registerServiceWithConsul("product-service", servicePort)
 	if err != nil {
-		log.Fatalf("Failed to register service with Consul: %v", err)
+		log.Printf("Warning: Failed to register service with Consul: %v", err)
+		log.Printf("Service will continue running without Consul registration")
+	} else {
+		log.Printf("Successfully registered product-service with Consul")
 	}
-	log.Printf("Successfully registered product-service with Consul")
 
 	fmt.Println("Product service gRPC server starting on :60051")
 	if err := grpcServer.Serve(lis); err != nil {

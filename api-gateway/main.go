@@ -4,26 +4,14 @@ import (
 	"log"
 	"net/http"
 	"os"
-
-	"github.com/gin-gonic/gin"
 )
 
-// wireApp sẽ được generate bởi Wire tool
-// Chạy: wire
 func main() {
 	// Sử dụng Wire để khởi tạo application với dependency injection
 	app, err := wireApp()
 	if err != nil {
 		log.Fatalf("Failed to initialize app: %v", err)
 	}
-
-	//  test
-	app.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"status":  "ok",
-			"message": "API Gateway is running",
-		})
-	})
 
 	// Get port from environment variable
 	port := os.Getenv("PORT")

@@ -80,26 +80,38 @@ func (s *UserService) CreateUser(ctx context.Context, req *user.CreateUserReques
 		return nil, fmt.Errorf("user with SDT %s already exists", req.Sdt)
 	}
 
-	// Create user model save to database
+	// Create user model
 	userModel := &model.User{
 		Name: req.Name,
 		SDT:  req.Sdt,
 	}
 
-	// Create account if role_id provided
-	if req.RoleId > 0 {
-		userModel.Account = &model.Account{
-			RoleID: uint(req.RoleId),
-		}
-	}
-
-	// Save to database
+	// Save user first
 	if err := s.userRepo.Create(userModel); err != nil {
 		return nil, fmt.Errorf("failed to create user: %v", err)
 	}
 
+	// Create account if role_id provided
+	if req.RoleId > 0 {
+		accountModel := &model.Account{
+			UserID: userModel.ID,
+			RoleID: uint(req.RoleId),
+		}
+		
+		// Save account
+		if err := s.userRepo.CreateAccount(accountModel); err != nil {
+			return nil, fmt.Errorf("failed to create account: %v", err)
+		}
+	}
+
+	// Load lại user với đầy đủ thông tin Account.Role
+	createdUser, err := s.userRepo.GetByID(userModel.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load created user: %v", err)
+	}
+
 	// Convert to proto
-	protoUser := s.convertToProtoUser(userModel)
+	protoUser := s.convertToProtoUser(createdUser)
 
 	return &user.CreateUserResponse{
 		User:    protoUser,
@@ -132,7 +144,13 @@ func (s *UserService) UpdateUser(ctx context.Context, req *user.UpdateUserReques
 		return nil, fmt.Errorf("failed to update user: %v", err)
 	}
 
-	protoUser := s.convertToProtoUser(userModel)
+	// Load lại user với đầy đủ thông tin Account.Role
+	updatedUser, err := s.userRepo.GetByID(userModel.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load updated user: %v", err)
+	}
+
+	protoUser := s.convertToProtoUser(updatedUser)
 	return &user.UpdateUserResponse{
 		User:    protoUser,
 		Message: "User updated successfully",

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"gin/api-gateway/service_manager"
 	"gin/api-gateway/utils"
 	"gin/proto/generated/user"
 
@@ -12,14 +13,19 @@ import (
 )
 
 type UserServiceClient struct {
-	Client user.UserServiceClient
+	ServiceManager *service_manager.ServiceManager
 }
 
-func NewUserServiceClient(client user.UserServiceClient) *UserServiceClient {
-	return &UserServiceClient{Client: client}
+func NewUserServiceClient(serviceManager *service_manager.ServiceManager) *UserServiceClient {
+	return &UserServiceClient{ServiceManager: serviceManager}
 }
 
 func (u *UserServiceClient) GetUser(c *gin.Context) {
+	if u.ServiceManager == nil || u.ServiceManager.UserClient == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "User service not available"})
+		return
+	}
+
 	userIDStr := c.Param("id")
 	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 	if err != nil {
@@ -29,7 +35,7 @@ func (u *UserServiceClient) GetUser(c *gin.Context) {
 	// tạo request
 	req := &user.GetUserRequest{Id: uint32(userID)}
 	// gọi grpc
-	resp, err := u.Client.GetUser(context.Background(), req)
+	resp, err := u.ServiceManager.UserClient.GetUser(context.Background(), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -38,9 +44,14 @@ func (u *UserServiceClient) GetUser(c *gin.Context) {
 }
 
 func (u *UserServiceClient) GetUserBySDT(c *gin.Context) {
-	sdt := c.Param("sdt")
+	if u.ServiceManager == nil || u.ServiceManager.UserClient == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "User service not available"})
+		return
+	}
+
+	sdt := c.Param("id")
 	req := &user.GetUserBySDTRequest{Sdt: sdt}
-	resp, err := u.Client.GetUserBySDT(context.Background(), req)
+	resp, err := u.ServiceManager.UserClient.GetUserBySDT(context.Background(), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -49,6 +60,11 @@ func (u *UserServiceClient) GetUserBySDT(c *gin.Context) {
 }
 
 func (u *UserServiceClient) CreateUser(c *gin.Context) {
+	if u.ServiceManager == nil || u.ServiceManager.UserClient == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "User service not available"})
+		return
+	}
+
 	var createReq struct {
 		Name   string `json:"name" binding:"required"`
 		SDT    string `json:"sdt" binding:"required"`
@@ -63,28 +79,30 @@ func (u *UserServiceClient) CreateUser(c *gin.Context) {
 		Sdt:    createReq.SDT,
 		RoleId: createReq.RoleID,
 	}
-	resp, err := u.Client.CreateUser(context.Background(), req)
+	resp, err := u.ServiceManager.UserClient.CreateUser(context.Background(), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Tạo JWT token cho user mới - lấy role từ database
-	roleName := resp.User.Account.Role.Name
-	token, err := utils.GenerateToken(strconv.FormatUint(uint64(resp.User.Id), 10), resp.User.Name, roleName)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+	// Kiểm tra user có account và role không
+	if resp.User == nil || resp.User.Account == nil || resp.User.Account.Role == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "User account or role not found"})
 		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
 		"user":    resp.User,
 		"message": resp.Message,
-		"token":   token,
 	})
 }
 
 func (u *UserServiceClient) UpdateUser(c *gin.Context) {
+	if u.ServiceManager == nil || u.ServiceManager.UserClient == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "User service not available"})
+		return
+	}
+
 	userIDStr := c.Param("id")
 	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 	if err != nil {
@@ -104,7 +122,7 @@ func (u *UserServiceClient) UpdateUser(c *gin.Context) {
 		Name: updateReq.Name,
 		Sdt:  updateReq.SDT,
 	}
-	resp, err := u.Client.UpdateUser(context.Background(), req)
+	resp, err := u.ServiceManager.UserClient.UpdateUser(context.Background(), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -113,6 +131,11 @@ func (u *UserServiceClient) UpdateUser(c *gin.Context) {
 }
 
 func (u *UserServiceClient) DeleteUser(c *gin.Context) {
+	if u.ServiceManager == nil || u.ServiceManager.UserClient == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "User service not available"})
+		return
+	}
+
 	userIDStr := c.Param("id")
 	userID, err := strconv.ParseUint(userIDStr, 10, 32)
 	if err != nil {
@@ -120,7 +143,7 @@ func (u *UserServiceClient) DeleteUser(c *gin.Context) {
 		return
 	}
 	req := &user.DeleteUserRequest{Id: uint32(userID)}
-	resp, err := u.Client.DeleteUser(context.Background(), req)
+	resp, err := u.ServiceManager.UserClient.DeleteUser(context.Background(), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -129,33 +152,37 @@ func (u *UserServiceClient) DeleteUser(c *gin.Context) {
 }
 
 func (u *UserServiceClient) ListUsers(c *gin.Context) {
-	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
-	req := &user.ListUsersRequest{Page: int32(page), Limit: int32(limit)}
-	resp, err := u.Client.ListUsers(context.Background(), req)
+	if u.ServiceManager == nil || u.ServiceManager.UserClient == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "User service not available"})
+		return
+	}
+
+	req := &user.ListUsersRequest{}
+	resp, err := u.ServiceManager.UserClient.ListUsers(context.Background(), req)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"users": resp.Users, "total": resp.Total, "message": resp.Message})
+	c.JSON(http.StatusOK, gin.H{"users": resp.Users, "message": resp.Message})
 }
 
-// LoginUser xử lý đăng nhập và trả về JWT token
-func (u *UserServiceClient) LoginUser(c *gin.Context) {
+func (u *UserServiceClient) Login(c *gin.Context) {
+	if u.ServiceManager == nil || u.ServiceManager.UserClient == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "User service not available"})
+		return
+	}
+
 	var loginReq struct {
 		SDT string `json:"sdt" binding:"required"`
 	}
-
 	if err := c.ShouldBindJSON(&loginReq); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
-
-	// Lấy thông tin user theo SDT
 	req := &user.GetUserBySDTRequest{Sdt: loginReq.SDT}
-	resp, err := u.Client.GetUserBySDT(context.Background(), req)
+	resp, err := u.ServiceManager.UserClient.GetUserBySDT(context.Background(), req)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -165,13 +192,14 @@ func (u *UserServiceClient) LoginUser(c *gin.Context) {
 		return
 	}
 
-	// Tạo JWT token - lấy role từ database
-	var roleName string
-	if resp.User.Account != nil && resp.User.Account.Role != nil {
-		roleName = resp.User.Account.Role.Name
-	} else {
-		roleName = "USER" // default role
+	// Kiểm tra user có account và role không
+	if resp.User.Account == nil || resp.User.Account.Role == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "User account or role not found"})
+		return
 	}
+
+	// Tạo JWT token
+	roleName := resp.User.Account.Role.Name
 	token, err := utils.GenerateToken(strconv.FormatUint(uint64(resp.User.Id), 10), resp.User.Name, roleName)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
@@ -180,7 +208,7 @@ func (u *UserServiceClient) LoginUser(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"user":    resp.User,
-		"token":   token,
 		"message": "Login successful",
+		"token":   token,
 	})
 }

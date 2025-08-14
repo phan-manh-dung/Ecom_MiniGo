@@ -39,7 +39,7 @@ func registerServiceWithConsul(serviceName string, servicePort int) error {
 	}
 
 	// Sử dụng container name
-	host := "user-service"
+	host := "localhost"
 
 	registration := &api.AgentServiceRegistration{
 		ID:      fmt.Sprintf("%s-%d", serviceName, servicePort),
@@ -74,10 +74,14 @@ func main() {
 	}
 
 	// Initialize Redis client
+	redisAddr := os.Getenv("REDIS_ADDR")
+	if redisAddr == "" {
+		redisAddr = "localhost:6379"
+	}
+
 	redisClient := redis.NewClient(&redis.Options{
-		Addr:     "redis-19112.c52.us-east-1-4.ec2.redns.redis-cloud.com:19112",
-		Username: "default",
-		Password: "pA4GVyJVQTLUeCXNBsKnauUAtKQND7Jl",
+		Addr:     redisAddr,
+		Password: "", // No password for local Redis
 		DB:       0,
 	})
 
@@ -123,13 +127,15 @@ func main() {
 	}
 
 	//
-	// Đăng ký Consul trước khi serve
+	// Đăng ký Consul trước khi serve (optional cho local development)
 	log.Printf("Attempting to register user-service with Consul on port %d", servicePort)
 	err = registerServiceWithConsul("user-service", servicePort)
 	if err != nil {
-		log.Fatalf("Failed to register service with Consul: %v", err)
+		log.Printf("Warning: Failed to register service with Consul: %v", err)
+		log.Printf("Service will continue running without Consul registration")
+	} else {
+		log.Printf("Successfully registered user-service with Consul")
 	}
-	log.Printf("Successfully registered user-service with Consul")
 
 	fmt.Printf("User service gRPC server starting on :%d\n", servicePort)
 	if err := grpcServer.Serve(lis); err != nil {
