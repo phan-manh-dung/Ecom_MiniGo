@@ -74,7 +74,7 @@ func provideApp(
 	// 1. Setup routes trước (không có middleware)
 	engine := router.SetupRoutes(userHandler, productHandler, orderHandler)
 
-	// 2. Sau đó áp dụng middleware theo thứ tự (từ ngoài vào trong)
+	// 2. Sau đó áp dụng middleware
 	engine.Use(corsMiddleware)      // CORS middleware (outermost)
 	engine.Use(requestIDMiddleware) // Request ID middleware
 	engine.Use(loggingMiddleware)   // Logging middleware
