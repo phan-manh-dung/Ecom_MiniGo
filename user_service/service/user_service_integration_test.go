@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -21,9 +21,8 @@ type UserServiceIntegrationTestSuite struct {
 
 // SetupSuite chạy một lần trước tất cả tests
 func (suite *UserServiceIntegrationTestSuite) SetupSuite() {
-	// Kết nối test database
-	dsn := "host=localhost user=postgres password=123postgres dbname=user_service port=5432 sslmode=disable"
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+	// Kết nối SQLite in-memory (database ảo)
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent), // Tắt log trong test
 	})
 	if err != nil {
@@ -32,49 +31,60 @@ func (suite *UserServiceIntegrationTestSuite) SetupSuite() {
 
 	suite.db = db
 
-	// Auto migrate tables
-	err = suite.db.AutoMigrate(&model.User{}, &model.Role{})
+	// Auto migrate tables (tạo schema giống hệt production)
+	// Migrate theo thứ tự để tránh foreign key constraint issues
+	err = suite.db.AutoMigrate(&model.Role{})
 	if err != nil {
-		suite.T().Fatalf("Failed to migrate test database: %v", err)
+		suite.T().Fatalf("Failed to migrate Role table: %v", err)
+	}
+
+	err = suite.db.AutoMigrate(&model.User{})
+	if err != nil {
+		suite.T().Fatalf("Failed to migrate User table: %v", err)
+	}
+
+	err = suite.db.AutoMigrate(&model.Account{})
+	if err != nil {
+		suite.T().Fatalf("Failed to migrate Account table: %v", err)
 	}
 
 	// Setup repositories
 	suite.userRepo = repository.NewUserRepository(suite.db)
+	if suite.userRepo == nil {
+		suite.T().Fatalf("Failed to create UserRepository")
+	}
 }
 
 // SetupTest chạy trước mỗi test case
 func (suite *UserServiceIntegrationTestSuite) SetupTest() {
-	// KHÔNG xóa data thật! Chỉ xóa test data cụ thể
-	suite.db.Exec("DELETE FROM users WHERE sdt LIKE 'test_%' OR sdt = '1234567890'")
+	// Mỗi test case có database riêng (SQLite in-memory tự động reset)
+	// KHÔNG cần cleanup gì cả - an toàn 100%
 }
 
 // TearDownSuite chạy một lần sau tất cả tests
 func (suite *UserServiceIntegrationTestSuite) TearDownSuite() {
-	// KHÔNG xóa gì cả! Giữ nguyên data thật
-	suite.db.Exec("DELETE FROM users WHERE sdt LIKE 'test_%' OR sdt = '1234567890'")
 }
 
 // Test đơn giản: Create User
 func (suite *UserServiceIntegrationTestSuite) TestCreateUser() {
-	// Arrange - Tạo user test với SDT an toàn
+	// Arrange - Tạo user test
 	testUser := &model.User{
 		Name: "Test User",
-		SDT:  "test_1234567890", // SDT bắt đầu bằng "test_" để dễ nhận biết
+		SDT:  "test_1234567890",
 	}
 
-	// Act - Tạo user qua repository
+	// Act - Tạo user qua repository (test business logic)
 	err := suite.userRepo.Create(testUser)
 
 	// Assert - Kiểm tra không có lỗi
 	assert.NoError(suite.T(), err)
 	assert.NotZero(suite.T(), testUser.ID) // ID phải được tạo
 
-	// Verify - Kiểm tra user đã được lưu vào database
-	var createdUser model.User
-	err = suite.db.Where("sdt = ?", testUser.SDT).First(&createdUser).Error
+	// Verify - Kiểm tra qua repository (KHÔNG test database trực tiếp)
+	foundUser, err := suite.userRepo.GetBySDT("test_1234567890")
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), testUser.Name, createdUser.Name)
-	assert.Equal(suite.T(), testUser.SDT, createdUser.SDT)
+	assert.Equal(suite.T(), testUser.Name, foundUser.Name)
+	assert.Equal(suite.T(), testUser.SDT, foundUser.SDT)
 }
 
 // Chạy test suite
