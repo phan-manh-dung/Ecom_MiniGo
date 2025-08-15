@@ -14,10 +14,10 @@ import (
 
 type UserService struct {
 	*generic.BaseService
-	userRepo *repository.UserRepository
+	userRepo repository.UserRepositoryInterface
 }
 
-func NewUserService(userRepo *repository.UserRepository) *UserService {
+func NewUserService(userRepo repository.UserRepositoryInterface) *UserService {
 	return &UserService{
 		BaseService: generic.NewBaseService(),
 		userRepo:    userRepo,
@@ -74,6 +74,17 @@ func (s *UserService) CreateUser(ctx context.Context, req *user.CreateUserReques
 		return nil, fmt.Errorf("name and SDT are required")
 	}
 
+	if len(req.Name) >= 20 || len(req.Name) <= 2 {
+		return nil, fmt.Errorf("name must be between 2 and 20 characters")
+	}
+
+	// Check if name contains numbers
+	for _, char := range req.Name {
+		if char >= '0' && char <= '9' {
+			return nil, fmt.Errorf("name cannot contain numbers")
+		}
+	}
+
 	// Check if user with SDT already exists
 	existingUser, _ := s.userRepo.GetBySDT(req.Sdt)
 	if existingUser != nil {
@@ -97,7 +108,7 @@ func (s *UserService) CreateUser(ctx context.Context, req *user.CreateUserReques
 			UserID: userModel.ID,
 			RoleID: uint(req.RoleId),
 		}
-		
+
 		// Save account
 		if err := s.userRepo.CreateAccount(accountModel); err != nil {
 			return nil, fmt.Errorf("failed to create account: %v", err)

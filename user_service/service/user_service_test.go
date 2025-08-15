@@ -1,29 +1,23 @@
 package service
 
 import (
+	"context"
 	"gin/proto/generated/user"
 	"gin/user_service/model"
+	"gin/user_service/repository"
+	"strings"
 	"testing"
 
 	"gorm.io/gorm"
 )
 
-// UserRepositoryInterface định nghĩa interface cho repository
-type UserRepositoryInterface interface {
-	Create(user *model.User) error
-	GetByID(id uint) (*model.User, error)
-	GetBySDT(sdt string) (*model.User, error)
-	Update(user *model.User) error
-	Delete(id uint) error
-	GetAll(page, limit int) ([]model.User, int64, error)
-	GetRoleByID(id uint) (*model.Role, error)
-	ListRoles(page, limit int) ([]model.Role, int64, error)
-}
-
-// Mock Repository
+// Mock Repository để test UserService - implement interface đúng
 type MockUserRepository struct {
 	users map[uint]*model.User
 }
+
+// Đảm bảo MockUserRepository implement UserRepositoryInterface
+var _ repository.UserRepositoryInterface = (*MockUserRepository)(nil)
 
 func NewMockUserRepository() *MockUserRepository {
 	return &MockUserRepository{
@@ -34,6 +28,11 @@ func NewMockUserRepository() *MockUserRepository {
 func (m *MockUserRepository) Create(user *model.User) error {
 	user.ID = uint(len(m.users) + 1)
 	m.users[user.ID] = user
+	return nil
+}
+
+func (m *MockUserRepository) CreateAccount(account *model.Account) error {
+	// Mock implementation - không cần lưu account trong test này
 	return nil
 }
 
@@ -89,192 +88,147 @@ func (m *MockUserRepository) ListRoles(page, limit int) ([]model.Role, int64, er
 	return roles, int64(len(roles)), nil
 }
 
-// Test Cases
-func TestUserService_CreateUser(t *testing.T) {
-	// Arrange
+// Unit Test cho CreateUser - Test validation logic THẬT
+func TestUserService_CreateUser_Validation(t *testing.T) {
+	// Arrange - Tạo service THẬT với mock repository
 	mockRepo := NewMockUserRepository()
+	userService := NewUserService(mockRepo)
 
-	req := &user.CreateUserRequest{
-		Name:   "John Doe",
-		Sdt:    "0123456789",
-		RoleId: 1,
-	}
+	t.Run("Báo lỗi khi Name rỗng", func(t *testing.T) {
+		// Arrange
+		req := &user.CreateUserRequest{
+			Name:   "", // Name rỗng
+			Sdt:    "0123456789",
+			RoleId: 1,
+		}
 
-	// Act - Test create user logic
-	err := mockRepo.Create(&model.User{
-		Name: req.Name,
-		SDT:  req.Sdt,
+		// Act - Gọi hàm THẬT
+		response, err := userService.CreateUser(context.Background(), req)
+
+		// Assert - Kiểm tra kết quả THẬT
+		if err == nil {
+			t.Error("Expected error for empty name, got nil")
+		}
+		if response != nil {
+			t.Error("Expected nil response for empty name, got response")
+		}
+		if !strings.Contains(err.Error(), "name and SDT are required") {
+			t.Errorf("Expected error to contain 'name and SDT are required', got '%s'", err.Error())
+		}
 	})
 
-	// Assert
-	if err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
+	t.Run("Báo lỗi khi SDT rỗng", func(t *testing.T) {
+		// Arrange
+		req := &user.CreateUserRequest{
+			Name:   "John Doe",
+			Sdt:    "", // SDT rỗng
+			RoleId: 1,
+		}
 
-	// Verify user was created
-	createdUser, err := mockRepo.GetBySDT(req.Sdt)
-	if err != nil {
-		t.Errorf("Expected to find created user, got error: %v", err)
-	}
-	if createdUser.Name != "John Doe" {
-		t.Errorf("Expected 'John Doe', got %s", createdUser.Name)
-	}
-	if createdUser.SDT != "0123456789" {
-		t.Errorf("Expected '0123456789', got %s", createdUser.SDT)
-	}
-}
+		// Act - Gọi hàm THẬT
+		response, err := userService.CreateUser(context.Background(), req)
 
-func TestUserService_GetUser(t *testing.T) {
-	// Arrange
-	mockRepo := NewMockUserRepository()
+		// Assert - Kiểm tra kết quả THẬT
+		if err == nil {
+			t.Error("Expected error for empty SDT, got nil")
+		}
+		if response != nil {
+			t.Error("Expected nil response for empty SDT, got response")
+		}
+		if !strings.Contains(err.Error(), "name and SDT are required") {
+			t.Errorf("Expected error to contain 'name and SDT are required', got '%s'", err.Error())
+		}
+	})
 
-	// Create a user first
-	testUser := &model.User{
-		Name: "John Doe",
-		SDT:  "0123456789",
-	}
-	mockRepo.Create(testUser)
+	t.Run("Báo lỗi khi Name quá dài", func(t *testing.T) {
+		// Arrange
+		req := &user.CreateUserRequest{
+			Name:   "Very very very very long name here", // Name quá dài
+			Sdt:    "0123456789",
+			RoleId: 1,
+		}
 
-	// Act
-	foundUser, err := mockRepo.GetByID(testUser.ID)
+		// Act - Gọi hàm THẬT
+		response, err := userService.CreateUser(context.Background(), req)
 
-	// Assert
-	if err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
-	if foundUser == nil {
-		t.Error("Expected user, got nil")
-	}
-	if foundUser.Name != "John Doe" {
-		t.Errorf("Expected 'John Doe', got %s", foundUser.Name)
-	}
-}
+		// Assert - Kiểm tra kết quả THẬT
+		if err == nil {
+			t.Error("Expected error for long name, got nil")
+		}
+		if response != nil {
+			t.Error("Expected nil response for long name, got response")
+		}
+		if !strings.Contains(err.Error(), "name must be between 2 and 20 characters") {
+			t.Errorf("Expected error to contain 'name must be between 2 and 20 characters', got '%s'", err.Error())
+		}
+	})
 
-func TestUserService_GetUser_NotFound(t *testing.T) {
-	// Arrange
-	mockRepo := NewMockUserRepository()
+	t.Run("Báo lỗi khi Name quá ngắn", func(t *testing.T) {
+		// Arrange
+		req := &user.CreateUserRequest{
+			Name:   "Jo", // Name quá ngắn
+			Sdt:    "0123456789",
+			RoleId: 1,
+		}
 
-	// Act
-	foundUser, err := mockRepo.GetByID(999)
+		// Act - Gọi hàm THẬT
+		response, err := userService.CreateUser(context.Background(), req)
 
-	// Assert
-	if err == nil {
-		t.Error("Expected error, got nil")
-	}
-	if foundUser != nil {
-		t.Error("Expected nil user, got user")
-	}
-	if err != gorm.ErrRecordNotFound {
-		t.Errorf("Expected gorm.ErrRecordNotFound, got %v", err)
-	}
-}
+		// Assert - Kiểm tra kết quả THẬT
+		if err == nil {
+			t.Error("Expected error for short name, got nil")
+		}
+		if response != nil {
+			t.Error("Expected nil response for short name, got response")
+		}
+		if !strings.Contains(err.Error(), "name must be between 2 and 20 characters") {
+			t.Errorf("Expected error to contain 'name must be between 2 and 20 characters', got '%s'", err.Error())
+		}
+	})
 
-func TestUserService_GetUserBySDT(t *testing.T) {
-	// Arrange
-	mockRepo := NewMockUserRepository()
+	t.Run("Báo lỗi khi Name chứa số", func(t *testing.T) {
+		// Arrange
+		req := &user.CreateUserRequest{
+			Name:   "John44", // Name chứa số
+			Sdt:    "0123456789",
+			RoleId: 1,
+		}
 
-	sdt := "0123456789"
+		// Act - Gọi hàm THẬT
+		response, err := userService.CreateUser(context.Background(), req)
 
-	// Create a user first
-	testUser := &model.User{
-		Name: "John Doe",
-		SDT:  sdt,
-	}
-	mockRepo.Create(testUser)
+		// Assert - Kiểm tra kết quả THẬT
+		// Test này sẽ PASS vì logic check Name chứa số đã được uncomment
+		if err == nil {
+			t.Error("Expected error for name with numbers, got nil")
+		}
+		if response != nil {
+			t.Error("Expected nil response for name with numbers, got response")
+		}
+		if !strings.Contains(err.Error(), "name cannot contain numbers") {
+			t.Errorf("Expected error to contain 'name cannot contain numbers', got '%s'", err.Error())
+		}
+		t.Logf("✅ Test PASS: Logic check Name chứa số hoạt động đúng")
+	})
 
-	// Act
-	foundUser, err := mockRepo.GetBySDT(sdt)
+	t.Run("Không báo lỗi khi tất cả fields hợp lệ", func(t *testing.T) {
+		// Arrange
+		req := &user.CreateUserRequest{
+			Name:   "John Doe",
+			Sdt:    "0123456789",
+			RoleId: 1,
+		}
 
-	// Assert
-	if err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
-	if foundUser == nil {
-		t.Error("Expected user, got nil")
-	}
-	if foundUser.SDT != sdt {
-		t.Errorf("Expected SDT %s, got %s", sdt, foundUser.SDT)
-	}
-}
+		// Act - Gọi hàm THẬT
+		response, err := userService.CreateUser(context.Background(), req)
 
-func TestUserService_UpdateUser(t *testing.T) {
-	// Arrange
-	mockRepo := NewMockUserRepository()
-
-	// Create a user first
-	testUser := &model.User{
-		Name: "John Doe",
-		SDT:  "0123456789",
-	}
-	mockRepo.Create(testUser)
-
-	// Update user
-	testUser.Name = "Jane Doe"
-	testUser.SDT = "0987654321"
-
-	// Act
-	err := mockRepo.Update(testUser)
-
-	// Assert
-	if err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
-
-	// Verify update
-	updatedUser, _ := mockRepo.GetByID(testUser.ID)
-	if updatedUser.Name != "Jane Doe" {
-		t.Errorf("Expected 'Jane Doe', got %s", updatedUser.Name)
-	}
-	if updatedUser.SDT != "0987654321" {
-		t.Errorf("Expected '0987654321', got %s", updatedUser.SDT)
-	}
-}
-
-func TestUserService_DeleteUser(t *testing.T) {
-	// Arrange
-	mockRepo := NewMockUserRepository()
-
-	// Create a user first
-	testUser := &model.User{
-		Name: "John Doe",
-		SDT:  "0123456789",
-	}
-	mockRepo.Create(testUser)
-
-	// Act
-	err := mockRepo.Delete(testUser.ID)
-
-	// Assert
-	if err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
-
-	// Verify deletion
-	_, err = mockRepo.GetByID(testUser.ID)
-	if err == nil {
-		t.Error("Expected error when getting deleted user, got nil")
-	}
-}
-
-func TestUserService_ListUsers(t *testing.T) {
-	// Arrange
-	mockRepo := NewMockUserRepository()
-
-	// Create some users
-	mockRepo.Create(&model.User{Name: "John Doe", SDT: "0123456789"})
-	mockRepo.Create(&model.User{Name: "Jane Doe", SDT: "0987654321"})
-
-	// Act
-	users, total, err := mockRepo.GetAll(1, 10)
-
-	// Assert
-	if err != nil {
-		t.Errorf("Expected no error, got %v", err)
-	}
-	if total != 2 {
-		t.Errorf("Expected total 2, got %d", total)
-	}
-	if len(users) != 2 {
-		t.Errorf("Expected 2 users, got %d", len(users))
-	}
+		// Assert - Kiểm tra kết quả THẬT
+		if err != nil {
+			t.Errorf("Expected no error for valid fields, got error: %v", err)
+		}
+		if response == nil {
+			t.Error("Expected response for valid fields, got nil")
+		}
+		t.Logf("Validation PASS: Tất cả fields hợp lệ")
+	})
 }

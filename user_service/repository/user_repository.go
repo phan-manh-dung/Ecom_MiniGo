@@ -5,12 +5,29 @@ package repository
 import (
 	"gin/shared/generic"
 	"gin/user_service/model"
+
 	"gorm.io/gorm"
 )
+
+// UserRepositoryInterface định nghĩa interface cho UserRepository
+type UserRepositoryInterface interface {
+	GetByID(id uint) (*model.User, error)
+	Create(user *model.User) error
+	CreateAccount(account *model.Account) error
+	Update(user *model.User) error
+	Delete(id uint) error
+	GetAll(page, limit int) ([]model.User, int64, error)
+	GetBySDT(sdt string) (*model.User, error)
+	GetRoleByID(id uint) (*model.Role, error)
+	ListRoles(page, limit int) ([]model.Role, int64, error)
+}
 
 type UserRepository struct {
 	*generic.BaseRepository
 }
+
+// Đảm bảo UserRepository implement UserRepositoryInterface
+var _ UserRepositoryInterface = (*UserRepository)(nil)
 
 func NewUserRepository(db *gorm.DB) *UserRepository {
 	return &UserRepository{
