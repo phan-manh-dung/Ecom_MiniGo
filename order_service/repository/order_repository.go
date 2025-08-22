@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"gin/order_service/model"
 	"gin/shared/generic"
 
@@ -17,8 +18,8 @@ func NewOrderRepository(db *gorm.DB) *OrderRepository {
 	}
 }
 
-func (r *OrderRepository) GetOrderByID(id uint) (*model.Order, error) {
-	return generic.GenericGetByID[model.Order, uint](r.GetDB(), id)
+func (r *OrderRepository) GetOrderByID(ctx context.Context, id uint) (*model.Order, error) {
+	return generic.GenericGetByID[model.Order, uint](ctx, r.GetDB(), id)
 }
 
 func (r *OrderRepository) GetOrdersByUserID(userID uint) ([]*model.Order, error) {
@@ -30,20 +31,20 @@ func (r *OrderRepository) GetOrdersByUserID(userID uint) ([]*model.Order, error)
 	return orders, nil
 }
 
-func (r *OrderRepository) CreateOrder(order *model.Order) error {
-	return generic.GenericCreate(r.GetDB(), order)
+func (r *OrderRepository) CreateOrder(ctx context.Context, order *model.Order) error {
+	return generic.GenericCreate[model.Order](ctx, r.GetDB(), order)
 }
 
-func (r *OrderRepository) UpdateOrderStatus(orderID uint, status string) error {
+func (r *OrderRepository) UpdateOrderStatus(ctx context.Context, orderID uint, status string) error {
 	// Lấy order hiện tại
-	order, err := r.GetOrderByID(orderID)
+	order, err := r.GetOrderByID(ctx, orderID)
 	if err != nil {
 		return err
 	}
 
 	// Cập nhật status
 	order.Status = status
-	return generic.GenericUpdate(r.GetDB(), order)
+	return generic.GenericUpdate(ctx, r.GetDB(), order)
 }
 
 func (r *OrderRepository) GetOrderDetails(orderID uint) ([]*model.OrderDetail, error) {

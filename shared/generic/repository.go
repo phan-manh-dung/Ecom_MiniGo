@@ -17,11 +17,11 @@ type GenericRepository[T any, ID any] interface {
 
 // CRUDRepository interface cho các operation CRUD cơ bản
 type CRUDRepository[T any, ID any] interface {
-	GetByID(id ID) (*T, error)
-	Create(entity *T) error
-	Update(entity *T) error
-	Delete(id ID) error
-	GetAll(page, limit int) ([]T, int64, error)
+	GetByID(ctx context.Context, id ID) (*T, error)
+	Create(ctx context.Context, entity *T) error
+	Update(ctx context.Context, entity *T) error
+	Delete(ctx context.Context, id ID) error
+	GetAll(ctx context.Context, page, limit int) ([]T, int64, error)
 }
 
 // BaseRepository struct cơ bản cho tất cả repository
@@ -41,8 +41,9 @@ func ValidateID[ID any](id ID) error {
 }
 
 // LogRepositoryOperation generic logging method
-func (r *BaseRepository) LogRepositoryOperation(operation string, details map[string]interface{}) {
+func (r *BaseRepository) LogRepositoryOperation(ctx context.Context, operation string, details map[string]interface{}) {
 	// Implement logging logic here
+	// Có thể lấy request ID, user ID từ context để log
 }
 
 // GetDB trả về database instance
@@ -51,40 +52,40 @@ func (r *BaseRepository) GetDB() *gorm.DB {
 }
 
 // Generic CRUD operations - sử dụng function thay vì method
-func GenericGetByID[T any, ID any](db *gorm.DB, id ID) (*T, error) {
+func GenericGetByID[T any, ID any](ctx context.Context, db *gorm.DB, id ID) (*T, error) {
 	var entity T
-	result := db.First(&entity, id)
+	result := db.WithContext(ctx).First(&entity, id)
 	if result.Error != nil {
 		return nil, result.Error
 	}
 	return &entity, nil
 }
 
-func GenericCreate[T any](db *gorm.DB, entity *T) error {
-	return db.Create(entity).Error
+func GenericCreate[T any](ctx context.Context, db *gorm.DB, entity *T) error {
+	return db.WithContext(ctx).Create(entity).Error
 }
 
-func GenericUpdate[T any](db *gorm.DB, entity *T) error {
-	return db.Save(entity).Error
+func GenericUpdate[T any](ctx context.Context, db *gorm.DB, entity *T) error {
+	return db.WithContext(ctx).Save(entity).Error
 }
 
-func GenericDelete[T any, ID any](db *gorm.DB, id ID) error {
+func GenericDelete[T any, ID any](ctx context.Context, db *gorm.DB, id ID) error {
 	var entity T
-	return db.Delete(&entity, id).Error
+	return db.WithContext(ctx).Delete(&entity, id).Error
 }
 
-func GenericGetAll[T any](db *gorm.DB, page, limit int) ([]T, int64, error) {
+func GenericGetAll[T any](ctx context.Context, db *gorm.DB, page, limit int) ([]T, int64, error) {
 	var entities []T
 	var total int64
 
 	// Count total
-	if err := db.Model(new(T)).Count(&total).Error; err != nil {
+	if err := db.WithContext(ctx).Model(new(T)).Count(&total).Error; err != nil {
 		return nil, 0, err
 	}
 
 	// Get paginated results
 	offset := (page - 1) * limit
-	result := db.Offset(offset).Limit(limit).Find(&entities)
+	result := db.WithContext(ctx).Offset(offset).Limit(limit).Find(&entities)
 	if result.Error != nil {
 		return nil, 0, result.Error
 	}
@@ -92,9 +93,9 @@ func GenericGetAll[T any](db *gorm.DB, page, limit int) ([]T, int64, error) {
 	return entities, total, nil
 }
 
-func GenericGetByField[T any](db *gorm.DB, field string, value interface{}) (*T, error) {
+func GenericGetByField[T any](ctx context.Context, db *gorm.DB, field string, value interface{}) (*T, error) {
 	var entity T
-	result := db.Where(field+" = ?", value).First(&entity)
+	result := db.WithContext(ctx).Where(field+" = ?", value).First(&entity)
 	if result.Error != nil {
 		return nil, result.Error
 	}

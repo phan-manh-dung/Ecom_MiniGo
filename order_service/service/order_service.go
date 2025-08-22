@@ -23,7 +23,7 @@ func NewOrderService(orderRepo *repository.OrderRepository, productClient produc
 }
 
 func (s *OrderService) GetOrder(ctx context.Context, id uint32) (*order.GetOrderResponse, error) {
-	ord, err := s.orderRepo.GetOrderByID(uint(id))
+	ord, err := s.orderRepo.GetOrderByID(ctx, uint(id))
 	if err != nil {
 		return nil, fmt.Errorf("order not found")
 	}
@@ -49,11 +49,11 @@ func (s *OrderService) GetOrdersByUser(ctx context.Context, userID uint32) (*ord
 }
 
 func (s *OrderService) UpdateOrderStatus(ctx context.Context, req *order.UpdateOrderStatusRequest) (*order.UpdateOrderStatusResponse, error) {
-	err := s.orderRepo.UpdateOrderStatus(uint(req.OrderId), req.Status)
+	err := s.orderRepo.UpdateOrderStatus(ctx, uint(req.OrderId), req.Status)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update status")
 	}
-	ord, _ := s.orderRepo.GetOrderByID(uint(req.OrderId))
+	ord, _ := s.orderRepo.GetOrderByID(ctx, uint(req.OrderId))
 	return &order.UpdateOrderStatusResponse{
 		Order:   convertToProtoOrder(ord),
 		Message: "Status updated",
@@ -63,7 +63,7 @@ func (s *OrderService) UpdateOrderStatus(ctx context.Context, req *order.UpdateO
 // CancelOrder hủy đơn hàng và publish event
 func (s *OrderService) CancelOrder(ctx context.Context, req *order.CancelOrderRequest) (*order.CancelOrderResponse, error) {
 	// 1. Lấy thông tin order
-	ord, err := s.orderRepo.GetOrderByID(uint(req.OrderId))
+	ord, err := s.orderRepo.GetOrderByID(ctx, uint(req.OrderId))
 	if err != nil {
 		return nil, fmt.Errorf("order not found")
 	}
@@ -74,7 +74,7 @@ func (s *OrderService) CancelOrder(ctx context.Context, req *order.CancelOrderRe
 	}
 
 	// 3. Update status thành CANCELLED
-	err = s.orderRepo.UpdateOrderStatus(uint(req.OrderId), "CANCELLED")
+	err = s.orderRepo.UpdateOrderStatus(ctx, uint(req.OrderId), "CANCELLED")
 	if err != nil {
 		return nil, fmt.Errorf("failed to cancel order")
 	}
@@ -100,7 +100,7 @@ func (s *OrderService) CancelOrder(ctx context.Context, req *order.CancelOrderRe
 	}
 
 	// 6. Lấy order đã update
-	updatedOrder, _ := s.orderRepo.GetOrderByID(uint(req.OrderId))
+	updatedOrder, _ := s.orderRepo.GetOrderByID(ctx, uint(req.OrderId))
 	return &order.CancelOrderResponse{
 		Order:   convertToProtoOrder(updatedOrder),
 		Message: "Order cancelled successfully",
@@ -140,7 +140,7 @@ func (s *OrderService) CreateOrder(ctx context.Context, req *order.CreateOrderRe
 	ord.TotalPrice = total
 
 	// 1. Lưu order vào database trước
-	if err := s.orderRepo.CreateOrder(ord); err != nil {
+	if err := s.orderRepo.CreateOrder(ctx, ord); err != nil {
 		return nil, fmt.Errorf("failed to create order")
 	}
 

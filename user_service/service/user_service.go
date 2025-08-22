@@ -26,7 +26,7 @@ func NewUserService(userRepo repository.UserRepositoryInterface) *UserService {
 
 // GetUser business logic
 func (s *UserService) GetUser(ctx context.Context, id uint32) (*user.GetUserResponse, error) {
-	userModel, err := s.userRepo.GetByID(uint(id))
+	userModel, err := s.userRepo.GetByID(ctx, uint(id))
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return &user.GetUserResponse{
@@ -48,7 +48,7 @@ func (s *UserService) GetUser(ctx context.Context, id uint32) (*user.GetUserResp
 
 // GetUserBySDT business logic
 func (s *UserService) GetUserBySDT(ctx context.Context, sdt string) (*user.GetUserBySDTResponse, error) {
-	userModel, err := s.userRepo.GetBySDT(sdt)
+	userModel, err := s.userRepo.GetBySDT(ctx, sdt)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return &user.GetUserBySDTResponse{
@@ -86,7 +86,10 @@ func (s *UserService) CreateUser(ctx context.Context, req *user.CreateUserReques
 	}
 
 	// Check if user with SDT already exists
-	existingUser, _ := s.userRepo.GetBySDT(req.Sdt)
+	existingUser, err := s.userRepo.GetBySDT(ctx, req.Sdt)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		return nil, fmt.Errorf("failed to check existing user: %v", err)
+	}
 	if existingUser != nil {
 		return nil, fmt.Errorf("user with SDT %s already exists", req.Sdt)
 	}
@@ -98,7 +101,7 @@ func (s *UserService) CreateUser(ctx context.Context, req *user.CreateUserReques
 	}
 
 	// Save user first
-	if err := s.userRepo.Create(userModel); err != nil {
+	if err := s.userRepo.Create(ctx, userModel); err != nil {
 		return nil, fmt.Errorf("failed to create user: %v", err)
 	}
 
@@ -110,13 +113,13 @@ func (s *UserService) CreateUser(ctx context.Context, req *user.CreateUserReques
 		}
 
 		// Save account
-		if err := s.userRepo.CreateAccount(accountModel); err != nil {
+		if err := s.userRepo.CreateAccount(ctx, accountModel); err != nil {
 			return nil, fmt.Errorf("failed to create account: %v", err)
 		}
 	}
 
 	// Load lại user với đầy đủ thông tin Account.Role
-	createdUser, err := s.userRepo.GetByID(userModel.ID)
+	createdUser, err := s.userRepo.GetByID(ctx, userModel.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load created user: %v", err)
 	}
@@ -132,7 +135,7 @@ func (s *UserService) CreateUser(ctx context.Context, req *user.CreateUserReques
 
 // UpdateUser business logic
 func (s *UserService) UpdateUser(ctx context.Context, req *user.UpdateUserRequest) (*user.UpdateUserResponse, error) {
-	userModel, err := s.userRepo.GetByID(uint(req.Id))
+	userModel, err := s.userRepo.GetByID(ctx, uint(req.Id))
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return &user.UpdateUserResponse{
@@ -151,12 +154,12 @@ func (s *UserService) UpdateUser(ctx context.Context, req *user.UpdateUserReques
 		userModel.SDT = req.Sdt
 	}
 
-	if err := s.userRepo.Update(userModel); err != nil {
+	if err := s.userRepo.Update(ctx, userModel); err != nil {
 		return nil, fmt.Errorf("failed to update user: %v", err)
 	}
 
 	// Load lại user với đầy đủ thông tin Account.Role
-	updatedUser, err := s.userRepo.GetByID(userModel.ID)
+	updatedUser, err := s.userRepo.GetByID(ctx, userModel.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load updated user: %v", err)
 	}
@@ -170,7 +173,7 @@ func (s *UserService) UpdateUser(ctx context.Context, req *user.UpdateUserReques
 
 // DeleteUser business logic
 func (s *UserService) DeleteUser(ctx context.Context, req *user.DeleteUserRequest) (*user.DeleteUserResponse, error) {
-	err := s.userRepo.Delete(uint(req.Id))
+	err := s.userRepo.Delete(ctx, uint(req.Id))
 	if err != nil {
 		return nil, fmt.Errorf("failed to delete user: %v", err)
 	}
@@ -190,7 +193,7 @@ func (s *UserService) ListUsers(ctx context.Context, req *user.ListUsersRequest)
 		limit = 10
 	}
 
-	users, total, err := s.userRepo.GetAll(page, limit)
+	users, total, err := s.userRepo.GetAll(ctx, page, limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list users: %v", err)
 	}
@@ -209,7 +212,7 @@ func (s *UserService) ListUsers(ctx context.Context, req *user.ListUsersRequest)
 
 // GetRole business logic
 func (s *UserService) GetRole(ctx context.Context, req *user.GetRoleRequest) (*user.GetRoleResponse, error) {
-	roleModel, err := s.userRepo.GetRoleByID(uint(req.Id))
+	roleModel, err := s.userRepo.GetRoleByID(ctx, uint(req.Id))
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return &user.GetRoleResponse{
@@ -242,7 +245,7 @@ func (s *UserService) ListRoles(ctx context.Context, req *user.ListRolesRequest)
 		limit = 10
 	}
 
-	roles, total, err := s.userRepo.ListRoles(page, limit)
+	roles, total, err := s.userRepo.ListRoles(ctx, page, limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list roles: %v", err)
 	}

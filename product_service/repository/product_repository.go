@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"gin/product_service/model"
 	"gin/shared/generic"
 
@@ -18,8 +19,8 @@ func NewProductRepository(db *gorm.DB) *ProductRepository {
 }
 
 // GetProduct - alias cho GetByID để tương thích với service
-func (r *ProductRepository) GetProduct(id uint) (*model.Product, error) {
-	return generic.GenericGetByID[model.Product, uint](r.GetDB(), id)
+func (r *ProductRepository) GetProduct(ctx context.Context, id uint) (*model.Product, error) {
+	return generic.GenericGetByID[model.Product, uint](ctx, r.GetDB(), id)
 }
 
 func (r *ProductRepository) GetByID(id uint) (*model.Product, error) {
@@ -31,16 +32,16 @@ func (r *ProductRepository) GetByID(id uint) (*model.Product, error) {
 	return &product, nil
 }
 
-func (r *ProductRepository) Create(product *model.Product) error {
-	return generic.GenericCreate(r.GetDB(), product)
+func (r *ProductRepository) Create(ctx context.Context, product *model.Product) error {
+	return generic.GenericCreate[model.Product](ctx, r.GetDB(), product)
 }
 
-func (r *ProductRepository) Update(product *model.Product) error {
-	return generic.GenericUpdate(r.GetDB(), product)
+func (r *ProductRepository) Update(ctx context.Context, product *model.Product) error {
+	return generic.GenericUpdate[model.Product](ctx, r.GetDB(), product)
 }
 
-func (r *ProductRepository) Delete(id uint) error {
-	return generic.GenericDelete[model.Product, uint](r.GetDB(), id)
+func (r *ProductRepository) Delete(ctx context.Context, id uint) error {
+	return generic.GenericDelete[model.Product, uint](ctx, r.GetDB(), id)
 }
 
 func (r *ProductRepository) DecreaseInventory(productId uint, quantity int) error {

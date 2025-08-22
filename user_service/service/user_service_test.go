@@ -25,25 +25,25 @@ func NewMockUserRepository() *MockUserRepository {
 	}
 }
 
-func (m *MockUserRepository) Create(user *model.User) error {
+func (m *MockUserRepository) Create(ctx context.Context, user *model.User) error {
 	user.ID = uint(len(m.users) + 1)
 	m.users[user.ID] = user
 	return nil
 }
 
-func (m *MockUserRepository) CreateAccount(account *model.Account) error {
+func (m *MockUserRepository) CreateAccount(ctx context.Context, account *model.Account) error {
 	// Mock implementation - không cần lưu account trong test này
 	return nil
 }
 
-func (m *MockUserRepository) GetByID(id uint) (*model.User, error) {
+func (m *MockUserRepository) GetByID(ctx context.Context, id uint) (*model.User, error) {
 	if user, exists := m.users[id]; exists {
 		return user, nil
 	}
 	return nil, gorm.ErrRecordNotFound
 }
 
-func (m *MockUserRepository) GetBySDT(sdt string) (*model.User, error) {
+func (m *MockUserRepository) GetBySDT(ctx context.Context, sdt string) (*model.User, error) {
 	for _, user := range m.users {
 		if user.SDT == sdt {
 			return user, nil
@@ -52,7 +52,7 @@ func (m *MockUserRepository) GetBySDT(sdt string) (*model.User, error) {
 	return nil, gorm.ErrRecordNotFound
 }
 
-func (m *MockUserRepository) Update(user *model.User) error {
+func (m *MockUserRepository) Update(ctx context.Context, user *model.User) error {
 	if _, exists := m.users[user.ID]; exists {
 		m.users[user.ID] = user
 		return nil
@@ -60,7 +60,7 @@ func (m *MockUserRepository) Update(user *model.User) error {
 	return gorm.ErrRecordNotFound
 }
 
-func (m *MockUserRepository) Delete(id uint) error {
+func (m *MockUserRepository) Delete(ctx context.Context, id uint) error {
 	if _, exists := m.users[id]; exists {
 		delete(m.users, id)
 		return nil
@@ -68,7 +68,7 @@ func (m *MockUserRepository) Delete(id uint) error {
 	return gorm.ErrRecordNotFound
 }
 
-func (m *MockUserRepository) GetAll(page, limit int) ([]model.User, int64, error) {
+func (m *MockUserRepository) GetAll(ctx context.Context, page, limit int) ([]model.User, int64, error) {
 	users := make([]model.User, 0, len(m.users))
 	for _, user := range m.users {
 		users = append(users, *user)
@@ -76,11 +76,11 @@ func (m *MockUserRepository) GetAll(page, limit int) ([]model.User, int64, error
 	return users, int64(len(users)), nil
 }
 
-func (m *MockUserRepository) GetRoleByID(id uint) (*model.Role, error) {
+func (m *MockUserRepository) GetRoleByID(ctx context.Context, id uint) (*model.Role, error) {
 	return &model.Role{Model: gorm.Model{ID: id}, Name: "User"}, nil
 }
 
-func (m *MockUserRepository) ListRoles(page, limit int) ([]model.Role, int64, error) {
+func (m *MockUserRepository) ListRoles(ctx context.Context, page, limit int) ([]model.Role, int64, error) {
 	roles := []model.Role{
 		{Model: gorm.Model{ID: 1}, Name: "Admin"},
 		{Model: gorm.Model{ID: 2}, Name: "User"},
@@ -102,10 +102,10 @@ func TestUserService_CreateUser_Validation(t *testing.T) {
 			RoleId: 1,
 		}
 
-		// Act - Gọi hàm THẬT
+		// Act
 		response, err := userService.CreateUser(context.Background(), req)
 
-		// Assert - Kiểm tra kết quả THẬT
+		// Assert - Kiểm tra kết quả
 		if err == nil {
 			t.Error("Expected error for empty name, got nil")
 		}
@@ -125,10 +125,10 @@ func TestUserService_CreateUser_Validation(t *testing.T) {
 			RoleId: 1,
 		}
 
-		// Act - Gọi hàm THẬT
+		// Act - Gọi hàm
 		response, err := userService.CreateUser(context.Background(), req)
 
-		// Assert - Kiểm tra kết quả THẬT
+		// Assert - Kiểm tra kết quả
 		if err == nil {
 			t.Error("Expected error for empty SDT, got nil")
 		}
@@ -148,10 +148,10 @@ func TestUserService_CreateUser_Validation(t *testing.T) {
 			RoleId: 1,
 		}
 
-		// Act - Gọi hàm THẬT
+		// Act - Gọi hàm
 		response, err := userService.CreateUser(context.Background(), req)
 
-		// Assert - Kiểm tra kết quả THẬT
+		// Assert - Kiểm tra kết quả
 		if err == nil {
 			t.Error("Expected error for long name, got nil")
 		}
@@ -171,10 +171,10 @@ func TestUserService_CreateUser_Validation(t *testing.T) {
 			RoleId: 1,
 		}
 
-		// Act - Gọi hàm THẬT
+		// Act - Gọi hàm
 		response, err := userService.CreateUser(context.Background(), req)
 
-		// Assert - Kiểm tra kết quả THẬT
+		// Assert - Kiểm tra kết quả
 		if err == nil {
 			t.Error("Expected error for short name, got nil")
 		}
@@ -194,11 +194,10 @@ func TestUserService_CreateUser_Validation(t *testing.T) {
 			RoleId: 1,
 		}
 
-		// Act - Gọi hàm THẬT
+		// Act - Gọi hàm
 		response, err := userService.CreateUser(context.Background(), req)
 
-		// Assert - Kiểm tra kết quả THẬT
-		// Test này sẽ PASS vì logic check Name chứa số đã được uncomment
+		// Assert - Kiểm tra kết quả
 		if err == nil {
 			t.Error("Expected error for name with numbers, got nil")
 		}
@@ -208,7 +207,7 @@ func TestUserService_CreateUser_Validation(t *testing.T) {
 		if !strings.Contains(err.Error(), "name cannot contain numbers") {
 			t.Errorf("Expected error to contain 'name cannot contain numbers', got '%s'", err.Error())
 		}
-		t.Logf("✅ Test PASS: Logic check Name chứa số hoạt động đúng")
+		t.Logf("Test PASS: Logic check Name chứa số hoạt động đúng")
 	})
 
 	t.Run("Không báo lỗi khi tất cả fields hợp lệ", func(t *testing.T) {
@@ -219,10 +218,10 @@ func TestUserService_CreateUser_Validation(t *testing.T) {
 			RoleId: 1,
 		}
 
-		// Act - Gọi hàm THẬT
+		// Act - Gọi hàm
 		response, err := userService.CreateUser(context.Background(), req)
 
-		// Assert - Kiểm tra kết quả THẬT
+		// Assert - Kiểm tra kết quả
 		if err != nil {
 			t.Errorf("Expected no error for valid fields, got error: %v", err)
 		}

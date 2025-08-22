@@ -136,14 +136,14 @@ func (suite *UserServiceIntegrationTestSuite) TestCreateUser() {
 	}
 
 	// Act - Tạo user qua repository
-	err := suite.userRepo.Create(testUser)
+	err := suite.userRepo.Create(suite.ctx, testUser)
 
 	// Assert - Kiểm tra không có lỗi
 	assert.NoError(suite.T(), err)
 	assert.NotZero(suite.T(), testUser.ID) // ID phải được tạo
 
 	// Verify - Kiểm tra user đã được tạo
-	foundUser, err := suite.userRepo.GetBySDT(testUser.SDT)
+	foundUser, err := suite.userRepo.GetBySDT(suite.ctx, testUser.SDT)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), testUser.Name, foundUser.Name)
 	assert.Equal(suite.T(), testUser.SDT, foundUser.SDT)
@@ -157,11 +157,11 @@ func (suite *UserServiceIntegrationTestSuite) TestGetUserBySDT() {
 		SDT:  suite.generateUniqueSDT(),
 	}
 
-	err := suite.userRepo.Create(testUser)
+	err := suite.userRepo.Create(suite.ctx, testUser)
 	assert.NoError(suite.T(), err)
 
 	// Act - Tìm user theo SDT
-	foundUser, err := suite.userRepo.GetBySDT(testUser.SDT)
+	foundUser, err := suite.userRepo.GetBySDT(suite.ctx, testUser.SDT)
 
 	// Assert
 	assert.NoError(suite.T(), err)
@@ -172,7 +172,7 @@ func (suite *UserServiceIntegrationTestSuite) TestGetUserBySDT() {
 // TestGetUserBySDT_NotFound test trường hợp không tìm thấy user
 func (suite *UserServiceIntegrationTestSuite) TestGetUserBySDT_NotFound() {
 	// Act - Tìm user không tồn tại
-	foundUser, err := suite.userRepo.GetBySDT("non_existent_sdt")
+	foundUser, err := suite.userRepo.GetBySDT(suite.ctx, "non_existent_sdt")
 
 	// Assert
 	assert.Error(suite.T(), err)
@@ -187,19 +187,19 @@ func (suite *UserServiceIntegrationTestSuite) TestUpdateUser() {
 		SDT:  suite.generateUniqueSDT(),
 	}
 
-	err := suite.userRepo.Create(testUser)
+	err := suite.userRepo.Create(suite.ctx, testUser)
 	assert.NoError(suite.T(), err)
 
 	// Act - Cập nhật user
 	newName := suite.generateUniqueName()
 	testUser.Name = newName
-	err = suite.userRepo.Update(testUser)
+	err = suite.userRepo.Update(suite.ctx, testUser)
 
 	// Assert
 	assert.NoError(suite.T(), err)
 
 	// Verify - Kiểm tra user đã được cập nhật
-	foundUser, err := suite.userRepo.GetByID(testUser.ID)
+	foundUser, err := suite.userRepo.GetByID(suite.ctx, testUser.ID)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), newName, foundUser.Name)
 }
@@ -212,18 +212,18 @@ func (suite *UserServiceIntegrationTestSuite) TestDeleteUser() {
 		SDT:  suite.generateUniqueSDT(),
 	}
 
-	err := suite.userRepo.Create(testUser)
+	err := suite.userRepo.Create(suite.ctx, testUser)
 	assert.NoError(suite.T(), err)
 	userID := testUser.ID
 
 	// Act - Xóa user
-	err = suite.userRepo.Delete(userID)
+	err = suite.userRepo.Delete(suite.ctx, userID)
 
 	// Assert
 	assert.NoError(suite.T(), err)
 
 	// Verify - Kiểm tra user đã bị xóa
-	foundUser, err := suite.userRepo.GetByID(userID)
+	foundUser, err := suite.userRepo.GetByID(suite.ctx, userID)
 	assert.Error(suite.T(), err)
 	assert.Nil(suite.T(), foundUser)
 }
@@ -236,12 +236,12 @@ func (suite *UserServiceIntegrationTestSuite) TestListUsers() {
 			Name: suite.generateUniqueName(),
 			SDT:  suite.generateUniqueSDT(),
 		}
-		err := suite.userRepo.Create(testUser)
+		err := suite.userRepo.Create(suite.ctx, testUser)
 		assert.NoError(suite.T(), err)
 	}
 
 	// Act - Lấy danh sách users
-	users, total, err := suite.userRepo.GetAll(1, 10)
+	users, total, err := suite.userRepo.GetAll(suite.ctx, 1, 10)
 
 	// Assert
 	assert.NoError(suite.T(), err)

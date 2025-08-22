@@ -25,7 +25,7 @@ func NewProductService(productRepo *repository.ProductRepository) *ProductServic
 }
 
 func (s *ProductService) GetProduct(ctx context.Context, id uint32) (*product.GetProductResponse, error) {
-	productModel, err := s.productRepo.GetProduct(uint(id))
+	productModel, err := s.productRepo.GetProduct(ctx, uint(id))
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return &product.GetProductResponse{
@@ -60,7 +60,7 @@ func (s *ProductService) CreateProduct(ctx context.Context, req *product.CreateP
 	}
 
 	// error
-	if err := s.productRepo.Create(productModel); err != nil {
+	if err := s.productRepo.Create(ctx, productModel); err != nil {
 		return nil, fmt.Errorf("failed to create product: %v", err)
 	}
 
@@ -75,7 +75,7 @@ func (s *ProductService) CreateProduct(ctx context.Context, req *product.CreateP
 
 func (s *ProductService) UpdateProduct(ctx context.Context, req *product.UpdateProductRequest) (*product.UpdateProductResponse, error) {
 	// Get existing product
-	existingProduct, err := s.productRepo.GetProduct(uint(req.Id))
+	existingProduct, err := s.productRepo.GetProduct(ctx, uint(req.Id))
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, fmt.Errorf("product not found")
@@ -98,7 +98,7 @@ func (s *ProductService) UpdateProduct(ctx context.Context, req *product.UpdateP
 	}
 
 	// Save updated product
-	if err := s.productRepo.Update(existingProduct); err != nil {
+	if err := s.productRepo.Update(ctx, existingProduct); err != nil {
 		return nil, fmt.Errorf("failed to update product: %v", err)
 	}
 
@@ -113,7 +113,7 @@ func (s *ProductService) UpdateProduct(ctx context.Context, req *product.UpdateP
 
 func (s *ProductService) DeleteProduct(ctx context.Context, id uint32) (*product.DeleteProductResponse, error) {
 	// Check if product exists
-	_, err := s.productRepo.GetProduct(uint(id))
+	_, err := s.productRepo.GetProduct(ctx, uint(id))
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, fmt.Errorf("product not found")
@@ -122,7 +122,7 @@ func (s *ProductService) DeleteProduct(ctx context.Context, id uint32) (*product
 	}
 
 	// Delete product
-	if err := s.productRepo.Delete(uint(id)); err != nil {
+	if err := s.productRepo.Delete(ctx, uint(id)); err != nil {
 		return nil, fmt.Errorf("failed to delete product: %v", err)
 	}
 
